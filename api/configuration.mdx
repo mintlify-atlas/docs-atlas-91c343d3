@@ -1,0 +1,238 @@
+---
+title: "Configuration"
+description: "SlipStream GUI configuration file format and settings schema"
+---
+
+## Configuration File Location
+
+SlipStream GUI stores configuration in `settings.json` located in the Electron userData directory:
+
+- **macOS**: `~/Library/Application Support/SlipStream GUI/settings.json`
+- **Windows**: `%APPDATA%\SlipStream GUI\settings.json`
+- **Linux**: `~/.config/SlipStream GUI/settings.json`
+
+The application automatically creates this file on first launch with default values.
+
+## Configuration Schema
+
+The settings file is a JSON object with the following structure:
+
+```json
+{
+  "resolver": "8.8.8.8:53",
+  "domain": "s.example.com",
+  "mode": "proxy",
+  "verbose": false,
+  "socks5AuthEnabled": false,
+  "socks5AuthUsername": "",
+  "socks5AuthPassword": "",
+  "systemProxyEnabledByApp": false,
+  "systemProxyServiceName": "",
+  "proxyBypassList": [],
+  "workspaces": [],
+  "activeWorkspaceId": null
+}
+```
+
+## Settings Fields
+
+### resolver
+
+<ParamField path="resolver" type="string" default="8.8.8.8:53">
+  DNS resolver address in `IP:port` format. Used by the SlipStream client for DNS tunneling.
+  
+  **Example values:**
+  - `8.8.8.8:53` (Google DNS)
+  - `1.1.1.1:53` (Cloudflare DNS)
+  - `9.9.9.9:53` (Quad9 DNS)
+</ParamField>
+
+### domain
+
+<ParamField path="domain" type="string" default="s.example.com">
+  Tunnel domain for SlipStream DNS tunneling. Must match your server configuration.
+  
+  **Example:** `s.example.com`
+</ParamField>
+
+### mode
+
+<ParamField path="mode" type="string" default="proxy">
+  Connection mode. Currently only `proxy` mode is fully supported.
+  
+  **Possible values:**
+  - `proxy` - HTTP/SOCKS5 proxy mode (recommended)
+  - `tun` - TUN device mode (experimental)
+</ParamField>
+
+### verbose
+
+<ParamField path="verbose" type="boolean" default="false">
+  Enable verbose logging for debugging. When enabled, all HTTP CONNECT requests and proxy traffic are logged in detail.
+</ParamField>
+
+### socks5AuthEnabled
+
+<ParamField path="socks5AuthEnabled" type="boolean" default="false">
+  Enable SOCKS5 authentication. When enabled, the local SOCKS5 proxy (port 5201) requires username/password authentication.
+</ParamField>
+
+### socks5AuthUsername
+
+<ParamField path="socks5AuthUsername" type="string" default="">
+  SOCKS5 authentication username. Only used when `socks5AuthEnabled` is `true`.
+</ParamField>
+
+### socks5AuthPassword
+
+<ParamField path="socks5AuthPassword" type="string" default="">
+  SOCKS5 authentication password. Only used when `socks5AuthEnabled` is `true`.
+</ParamField>
+
+### systemProxyEnabledByApp
+
+<ParamField path="systemProxyEnabledByApp" type="boolean" default="false">
+  Internal flag tracking whether the system proxy was enabled by this application. Used for safe cleanup on exit.
+</ParamField>
+
+### systemProxyServiceName
+
+<ParamField path="systemProxyServiceName" type="string" default="">
+  Network service name used for system proxy configuration (macOS only). Example: `Wi-Fi` or `Ethernet`.
+</ParamField>
+
+### proxyBypassList
+
+<ParamField path="proxyBypassList" type="array" default="[]">
+  List of domains or IP addresses that should bypass the proxy (split tunneling).
+  
+  **Example:**
+  ```json
+  ["localhost", "127.0.0.1", "*.local", "192.168.*"]
+  ```
+</ParamField>
+
+### workspaces
+
+<ParamField path="workspaces" type="array" default="[]">
+  Array of workspace/preset configurations. Each workspace stores a unique combination of resolver, domain, and bypass list.
+  
+  **Workspace object structure:**
+  ```json
+  {
+    "id": "workspace-uuid",
+    "name": "Home",
+    "resolver": "8.8.8.8:53",
+    "domain": "s.example.com",
+    "proxyBypassList": []
+  }
+  ```
+</ParamField>
+
+### activeWorkspaceId
+
+<ParamField path="activeWorkspaceId" type="string | null" default="null">
+  ID of the currently active workspace. When set, the application loads settings from that workspace.
+</ParamField>
+
+## Settings Persistence
+
+Settings are automatically saved to disk whenever changed through the UI or IPC API. The application:
+
+1. **Updates in-memory state** immediately for instant UI response
+2. **Writes to disk** synchronously using `fs.writeFileSync()`
+3. **Validates** settings on load and applies defaults for missing fields
+
+## Settings Migration
+
+On first launch, the application performs a one-time migration:
+
+```javascript main.js
+function loadSettings() {
+  const settingsPath = ensureSettingsFilePath();
+  
+  // One-time migration: copy legacy settings to userData
+  if (!fs.existsSync(settingsPath) && fs.existsSync(LEGACY_SETTINGS_FILE)) {
+    try {
+      const legacyData = fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8');
+      fs.writeFileSync(settingsPath, legacyData);
+    } catch (err) {
+      console.warn('Settings migration skipped:', err?.message || err);
+    }
+  }
+  // ... load settings
+}
+```
+
+This ensures packaged applications can persist settings outside the read-only `app.asar` archive.
+
+## Default Values
+
+Default values are defined as constants in `main.js`:
+
+```javascript main.js
+const HTTP_PROXY_PORT = 8080;
+const SOCKS5_PORT = 5201;
+
+let RESOLVER = '8.8.8.8:53';
+let DOMAIN = 's.example.com';
+let useTunMode = false;
+let verboseLogging = false;
+let socks5AuthEnabled = false;
+let socks5AuthUsername = '';
+let socks5AuthPassword = '';
+let proxyBypassList = [];
+let workspaces = [];
+let activeWorkspaceId = null;
+```
+
+## Example Configuration
+
+### Basic Configuration
+
+```json
+{
+  "resolver": "1.1.1.1:53",
+  "domain": "tunnel.example.com",
+  "mode": "proxy",
+  "verbose": false,
+  "socks5AuthEnabled": false,
+  "socks5AuthUsername": "",
+  "socks5AuthPassword": "",
+  "proxyBypassList": ["localhost", "127.0.0.1"],
+  "workspaces": [],
+  "activeWorkspaceId": null
+}
+```
+
+### Configuration with Workspaces
+
+```json
+{
+  "resolver": "8.8.8.8:53",
+  "domain": "s.home.com",
+  "mode": "proxy",
+  "verbose": true,
+  "socks5AuthEnabled": true,
+  "socks5AuthUsername": "user",
+  "socks5AuthPassword": "pass",
+  "proxyBypassList": ["*.local", "192.168.*"],
+  "workspaces": [
+    {
+      "id": "home-123",
+      "name": "Home",
+      "resolver": "8.8.8.8:53",
+      "domain": "s.home.com",
+      "proxyBypassList": ["*.local"]
+    },
+    {
+      "id": "work-456",
+      "name": "Work",
+      "resolver": "1.1.1.1:53",
+      "domain": "s.work.com",
+      "proxyBypassList": ["*.corp.local"]
+    }
+  ],
+  "activeWorkspaceId": "home-123"
+}
+```

@@ -1,0 +1,405 @@
+---
+title: Contributing
+description: Guidelines for contributing to SlipStream GUI
+---
+
+Thank you for your interest in contributing to SlipStream GUI! This guide provides guidelines and instructions for contributing to the project.
+
+## Getting started
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork the SlipStream GUI repository on GitHub by clicking the "Fork" button on the [repository page](https://github.com/mirzaaghazadeh/SlipStreamGUI).
+  </Step>
+  
+  <Step title="Clone your fork">
+    Clone your forked repository to your local machine:
+    
+    <CodeGroup>
+    ```bash git
+    git clone https://github.com/YOUR_USERNAME/SlipStreamGUI.git
+    cd SlipStreamGUI
+    ```
+    </CodeGroup>
+    
+    Replace `YOUR_USERNAME` with your GitHub username.
+  </Step>
+  
+  <Step title="Install dependencies">
+    Install all required dependencies:
+    
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Create a branch">
+    Create a new branch for your changes:
+    
+    <CodeGroup>
+    ```bash git
+    git checkout -b feature/your-feature-name
+    ```
+    </CodeGroup>
+    
+    Use a descriptive branch name:
+    - `feature/your-feature-name` for new features
+    - `fix/bug-description` for bug fixes
+    - `docs/what-you-changed` for documentation changes
+  </Step>
+</Steps>
+
+## Development workflow
+
+### Making changes
+
+1. **Make your changes** to the codebase
+2. **Test your changes** thoroughly:
+   
+   <CodeGroup>
+   ```bash npm
+   npm start  # Test in development mode
+   ```
+   </CodeGroup>
+
+3. **Ensure code quality**:
+   - Follow existing code style
+   - Test on both macOS and Windows if possible
+   - Check that the app builds successfully
+
+### Testing checklist
+
+Before submitting your changes, ensure:
+
+- [ ] App starts without errors
+- [ ] VPN start/stop functionality works
+- [ ] System proxy configuration works (if modified)
+- [ ] No console errors in development mode
+- [ ] App builds successfully for target platform(s)
+- [ ] Changes work on both macOS and Windows (if applicable)
+
+### Building for testing
+
+Test the built application:
+
+<CodeGroup>
+```bash macOS
+npm run build:mac
+```
+
+```bash Windows
+npm run build:win
+```
+
+```bash Linux
+npm run build:linux
+```
+</CodeGroup>
+
+## Code style
+
+Follow these guidelines to maintain consistent code:
+
+### JavaScript style
+
+- **Indentation**: Use 2 spaces (not tabs)
+- **Semicolons**: Use semicolons at the end of statements
+- **Quotes**: Use single quotes for strings (except in JSON)
+- **Comments**: Comment complex logic and non-obvious code
+- **Functions**: Keep functions focused and small
+- **Naming**: Use descriptive variable and function names
+
+### Example
+
+```javascript
+// Good
+function startVpnConnection(domain, dnsResolver) {
+  // Validate parameters before starting
+  if (!domain || !dnsResolver) {
+    console.error('Missing required parameters');
+    return false;
+  }
+  
+  // Start the VPN connection
+  const result = initializeConnection(domain, dnsResolver);
+  return result;
+}
+
+// Avoid
+function start(d,r){if(!d||!r){return false}return initializeConnection(d,r)}
+```
+
+### HTML/CSS style
+
+- Use semantic HTML elements
+- Keep CSS organized and commented
+- Follow existing styling patterns
+- Use consistent naming conventions for classes
+
+## Submitting changes
+
+<Steps>
+  <Step title="Commit your changes">
+    Commit your changes with a descriptive message:
+    
+    <CodeGroup>
+    ```bash git
+    git commit -m "Add: Description of your changes"
+    ```
+    </CodeGroup>
+    
+    Use conventional commit prefixes:
+    - `Add:` for new features
+    - `Fix:` for bug fixes
+    - `Update:` for improvements to existing features
+    - `Docs:` for documentation changes
+    - `Refactor:` for code refactoring
+    - `Test:` for adding tests
+  </Step>
+  
+  <Step title="Push to your fork">
+    Push your changes to your forked repository:
+    
+    <CodeGroup>
+    ```bash git
+    git push origin feature/your-feature-name
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Create a pull request">
+    1. Go to the [original repository](https://github.com/mirzaaghazadeh/SlipStreamGUI)
+    2. Click "Pull requests" → "New pull request"
+    3. Click "compare across forks"
+    4. Select your fork and branch
+    5. Fill in the pull request template:
+       - Clear title describing the change
+       - Description of what changed and why
+       - Screenshots if UI changed
+       - Testing steps
+    6. Submit the pull request
+  </Step>
+</Steps>
+
+## Pull request guidelines
+
+### Good pull request title examples
+
+- ✅ "Add DNS checker with parallel testing"
+- ✅ "Fix system proxy not clearing on Windows"
+- ✅ "Update UI to show connection latency"
+- ✅ "Docs: Add troubleshooting section for Linux"
+
+### Pull request description
+
+Include in your PR description:
+
+1. **What changed**: Brief summary of changes
+2. **Why**: Reason for the change
+3. **How to test**: Steps to verify the changes
+4. **Screenshots**: If UI changed (before/after)
+5. **Breaking changes**: If any, list them clearly
+
+### Example pull request
+
+```markdown
+## What changed
+Added a DNS health checker that tests multiple DNS servers in parallel.
+
+## Why
+Users often don't know which DNS server works best. This feature helps them
+find a working DNS server quickly.
+
+## How to test
+1. Start the app
+2. Click "DNS Checker"
+3. Enter test domain and DNS servers
+4. Verify parallel testing works
+5. Click "Use" on an OK result
+6. Verify DNS resolver is set correctly
+
+## Screenshots
+[Before/After screenshots]
+
+## Breaking changes
+None
+```
+
+## Reporting issues
+
+When reporting bugs or issues:
+
+### Required information
+
+- **OS version**: macOS 13.5, Windows 11, Ubuntu 22.04, etc.
+- **App version**: Check in the app's About section
+- **Description**: Clear description of the issue
+- **Steps to reproduce**: Numbered steps to reproduce the issue
+- **Expected behavior**: What should happen
+- **Actual behavior**: What actually happens
+- **Logs**: Relevant error messages from the logs panel
+- **Screenshots**: If applicable
+
+### Example bug report
+
+```markdown
+## Bug: VPN won't start on macOS 14
+
+**OS**: macOS 14.0 (Sonoma)
+**App version**: 1.1.0
+
+**Steps to reproduce**:
+1. Launch SlipStream GUI
+2. Click "Start VPN"
+3. Wait 10 seconds
+
+**Expected**: VPN starts and status shows "Running"
+**Actual**: Error message "Failed to start client"
+
+**Logs**:
+```
+Error: spawn EACCES
+    at ChildProcess.spawn
+```
+
+**Screenshots**: [attached]
+```
+
+## Feature requests
+
+When requesting new features:
+
+### Include
+
+1. **Use case**: Explain why you need this feature
+2. **Proposed solution**: Describe how it should work
+3. **Alternatives**: Other ways to achieve the same goal
+4. **Additional context**: Any relevant information
+5. **Backward compatibility**: Consider existing users
+
+### Example feature request
+
+```markdown
+## Feature: Auto-reconnect on connection loss
+
+**Use case**:
+When the VPN connection drops, users have to manually click "Start VPN"
+again. This is inconvenient and interrupts workflow.
+
+**Proposed solution**:
+Add an "Auto-reconnect" toggle in settings. When enabled, the app
+automatically attempts to reconnect if the connection is lost.
+
+**Alternatives**:
+- Manual reconnect (current behavior)
+- System-level network monitoring
+
+**Backward compatibility**:
+Disabled by default, so existing users won't see changed behavior.
+```
+
+## Code review process
+
+After submitting a pull request:
+
+1. **Automated checks**: Wait for CI/CD checks to pass
+2. **Maintainer review**: A maintainer will review your changes
+3. **Feedback**: Address any requested changes
+4. **Approval**: Once approved, your PR will be merged
+
+### Responding to feedback
+
+- Be open to suggestions and constructive criticism
+- Make requested changes promptly
+- Ask questions if feedback is unclear
+- Keep discussions professional and respectful
+
+## Testing
+
+Ensure your changes are thoroughly tested:
+
+### Manual testing
+
+<Tabs>
+  <Tab title="macOS">
+    - Test on macOS (Intel and Apple Silicon if possible)
+    - Verify system proxy configuration
+    - Test VPN start/stop
+    - Check for permission issues
+  </Tab>
+  
+  <Tab title="Windows">
+    - Test with and without administrator privileges
+    - Verify system proxy registry changes
+    - Test VPN start/stop
+    - Check portable version works
+  </Tab>
+  
+  <Tab title="Linux">
+    - Test AppImage and DEB packages
+    - Verify system proxy configuration
+    - Test VPN start/stop
+    - Check file permissions
+  </Tab>
+</Tabs>
+
+### Test coverage areas
+
+- VPN connection (start/stop)
+- System proxy configuration
+- DNS resolver configuration
+- HTTP proxy server
+- SOCKS5 connection
+- Settings persistence
+- UI responsiveness
+- Error handling
+- Log output
+
+## Community guidelines
+
+### Be respectful
+
+- Treat everyone with respect and kindness
+- Welcome newcomers and help them get started
+- Assume good intentions
+- Keep discussions professional
+
+### Be collaborative
+
+- Share knowledge and help others
+- Provide constructive feedback
+- Acknowledge contributions
+- Work together towards common goals
+
+### Be patient
+
+- Maintainers review contributions in their free time
+- Not all features will be accepted
+- Be understanding of different perspectives
+- Take time to explain your reasoning
+
+## Getting help
+
+If you need help:
+
+1. **Check existing issues**: Someone may have already asked
+2. **Read the documentation**: Most questions are answered in docs
+3. **Ask in discussions**: Open a GitHub discussion
+4. **Be specific**: Provide context and details
+
+## Recognition
+
+Contributors are recognized:
+
+- In the project README
+- In release notes
+- Through GitHub's contributor graph
+- With our sincere gratitude!
+
+---
+
+<Note>
+  Thank you for contributing to SlipStream GUI! Your efforts help make this tool better for everyone.
+</Note>

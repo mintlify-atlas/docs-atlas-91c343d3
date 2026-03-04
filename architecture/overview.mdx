@@ -1,0 +1,267 @@
+---
+title: Architecture overview
+description: Understanding the SlipStream GUI system architecture and component interactions
+---
+
+SlipStream GUI is built on Electron and implements a sophisticated multi-layer proxy architecture that routes application traffic through an encrypted VPN tunnel.
+
+## System Architecture
+
+The application consists of several key components working together:
+
+```
+Your Applications
+    ↓ HTTP/HTTPS
+HTTP Proxy Server (127.0.0.1:8080)
+    ↓ SOCKS5 Protocol
+SOCKS5 Client (127.0.0.1:5201)
+    ↓ Encrypted Tunnel
+SlipStream VPN Server
+```
+
+### Core Components
+
+<CardGroup cols={2}>
+  <Card title="Electron Application" icon="window">
+    Main process manages system integration, spawns native binaries, and handles IPC
+  </Card>
+  <Card title="HTTP Proxy Server" icon="server">
+    Node.js HTTP proxy on port 8080 converts HTTP/HTTPS requests to SOCKS5
+  </Card>
+  <Card title="SlipStream Client" icon="shield">
+    Native binary that establishes encrypted SOCKS5 connection on port 5201
+  </Card>
+  <Card title="System Proxy" icon="gear">
+    OS-level proxy configuration routes all traffic through the application
+  </Card>
+</CardGroup>
+
+## Process Architecture
+
+### Main Process (main.js)
+
+The Electron main process handles:
+- Window creation and lifecycle management
+- Native binary process spawning and supervision
+- HTTP proxy server implementation
+- System proxy configuration
+- IPC communication with renderer
+- Settings persistence
+
+### Renderer Process (index.html)
+
+The renderer process provides:
+- User interface and controls
+- Status monitoring and display
+- Real-time log viewing
+- Settings management UI
+- IPC communication with main process
+
+<Note>
+  The renderer runs with `nodeIntegration: true` and `contextIsolation: false` to enable direct Node.js access for IPC communication.
+</Note>
+
+## Binary Process Management
+
+### SlipStream Client Spawning
+
+The native SlipStream client binary is spawned as a child process from `main.js:281-398`:
+
+```javascript
+function startSlipstreamClient(resolver, domain) {
+  const clientPath = getSlipstreamClientPath();
+  if (!clientPath) {
+    throw new Error('Unsupported platform');
+  }
+  if (!fs.existsSync(clientPath)) {
+    throw new Error(`SlipStream client binary not found at: ${clientPath}`);
+  }
+
+  const args = ['--resolver', resolver, '--domain', domain];
+  
+  slipstreamProcess = spawn(clientPath, args, {
+    stdio: 'pipe',
+    detached: false
+  });
+
+  // Handle stdout, stderr, and process exit
+  slipstreamProcess.stdout.on('data', (data) => {
+    console.log(`Slipstream: ${data}`);
+    safeSend('slipstream-log', data.toString());
+  });
+
+  slipstreamProcess.stderr.on('data', (data) => {
+    let errorStr = data.toString();
+    errorStr = errorStr.replace(/\x1b\[[0-9;]*m/g, '').trim();
+    safeSend('slipstream-error', errorStr);
+  });
+
+  slipstreamProcess.on('close', (code) => {
+    console.log(`Slipstream process exited with code ${code}`);
+    slipstreamProcess = null;
+    safeSend('slipstream-exit', code);
+  });
+}
+```
+
+### Binary Path Resolution
+
+The application looks for platform-specific binaries in `main.js:240-279`:
+
+```javascript
+function getSlipstreamClientPath() {
+  const platform = process.platform;
+  const resourcesPath = app.isPackaged 
+    ? path.join(process.resourcesPath)
+    : __dirname;
+  
+  if (platform === 'darwin') {
+    const preferred = process.arch === 'arm64' 
+      ? 'slipstream-client-mac-arm64' 
+      : 'slipstream-client-mac-intel';
+    const candidates = [
+      path.join(resourcesPath, 'binaries', preferred),
+      path.join(resourcesPath, preferred)
+    ];
+    return candidates.find((p) => fs.existsSync(p)) || candidates[0];
+  }
+  // Similar logic for Windows and Linux...
+}
+```
+
+<Info>
+  In development, binaries are loaded from `./binaries/`. In packaged apps, they're loaded from `process.resourcesPath`.
+</Info>
+
+## IPC Communication
+
+### Main to Renderer
+
+The main process sends updates to the renderer using `safeSend()` from `main.js:183-190`:
+
+```javascript
+function safeSend(channel, payload) {
+  try {
+    if (!canSendToWindow()) return;
+    mainWindow.webContents.send(channel, payload);
+  } catch (_) {
+    // Ignore: window is closing/destroyed.
+  }
+}
+```
+
+Key channels:
+- `status-update` - Connection status changes
+- `slipstream-log` - Client stdout logs
+- `slipstream-error` - Client stderr errors
+- `slipstream-exit` - Process termination
+
+### Renderer to Main
+
+The renderer sends commands via `ipcMain` handlers registered in main.js:
+
+- `start-vpn` - Start SlipStream client and proxy
+- `stop-vpn` - Stop client and cleanup
+- `configure-system-proxy` - Enable OS proxy settings
+- `disable-system-proxy` - Restore OS proxy settings
+- `save-settings` - Persist configuration
+- `get-status` - Request current status
+
+## Port Configuration
+
+The application uses two fixed ports defined in `main.js:16-17`:
+
+```javascript
+const HTTP_PROXY_PORT = 8080;
+const SOCKS5_PORT = 5201;
+```
+
+<Warning>
+  Both ports must be available on the system. Port conflicts will cause the connection to fail.
+</Warning>
+
+## Data Flow
+
+1. **Application makes request** → Configured to use HTTP proxy at 127.0.0.1:8080
+2. **HTTP Proxy receives request** → Converts to SOCKS5 protocol
+3. **SOCKS5 forwarding** → Sends to SlipStream client at 127.0.0.1:5201
+4. **Client encrypts** → Establishes tunnel to VPN server
+5. **VPN server routes** → Forwards to destination on internet
+6. **Response flows back** → Through same chain in reverse
+
+## Error Handling
+
+The application implements several error recovery mechanisms:
+
+### Process Supervision
+
+From `main.js:356-365`:
+
+```javascript
+slipstreamProcess.on('close', (code) => {
+  console.log(`Slipstream process exited with code ${code}`);
+  slipstreamProcess = null;
+  safeSend('slipstream-exit', code);
+  sendStatusUpdate();
+  if (isRunning) {
+    // If SlipStream dies unexpectedly, cleanup system proxy
+    void cleanupAndDisableProxyIfNeeded('slipstream-exit');
+  }
+});
+```
+
+### Port Conflict Detection
+
+From `main.js:333-341`:
+
+```javascript
+if (errorStr.includes('Address already in use') || 
+    errorStr.includes('EADDRINUSE')) {
+  console.warn('Port 5201 is already in use. Trying to kill existing process...');
+  exec('lsof -ti:5201 | xargs kill -9 2>/dev/null', (err) => {
+    if (!err) {
+      console.log('Killed process using port 5201. Please restart the VPN.');
+      safeSend('slipstream-error', 'Port 5201 was in use...');
+    }
+  });
+}
+```
+
+### Uncaught Exception Handling
+
+From `main.js:21-26`:
+
+```javascript
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection at', promise, 'reason:', reason);
+});
+```
+
+## Settings Persistence
+
+Settings are stored in JSON format in the Electron userData directory (`main.js:51-163`):
+
+- **Development**: `./settings.json`
+- **Production**: `~/.config/SlipStream GUI/settings.json` (varies by OS)
+
+Stored settings include:
+- DNS resolver configuration
+- Domain settings
+- Proxy mode (HTTP vs TUN)
+- Authentication credentials
+- System proxy state
+- Workspace configurations
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Proxy Chain" icon="link" href="/architecture/proxy-chain">
+    Learn how the multi-layer proxy system works
+  </Card>
+  <Card title="Project Structure" icon="folder" href="/architecture/project-structure">
+    Explore the codebase organization
+  </Card>
+</CardGroup>

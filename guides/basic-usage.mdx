@@ -1,0 +1,163 @@
+---
+title: Basic usage
+description: Learn how to start and use SlipStream GUI for secure VPN connections
+---
+
+## Starting the VPN
+
+Once you've installed SlipStream GUI, getting started is simple:
+
+<Steps>
+  <Step title="Launch SlipStream GUI">
+    Open the application after installation. The interface will display the connection status panel showing "Disconnected".
+  </Step>
+
+  <Step title="Configure your server (if needed)">
+    By default, SlipStream GUI uses:
+    - **DNS Resolver**: `8.8.8.8:53`
+    - **Domain**: `s.example.com`
+    
+    If you have your own server, update these values in the Configuration section.
+  </Step>
+
+  <Step title="Start the VPN">
+    Click the **"Start VPN"** button. The status indicators will update as services start:
+    - Client (SlipStream client process)
+    - HTTP Proxy (Port 8080)
+    - System Proxy configuration (if enabled)
+  </Step>
+
+  <Step title="Wait for connection">
+    Watch the status panel turn to "Connected" with a green indicator when all services are running.
+  </Step>
+</Steps>
+
+## Understanding the status panel
+
+The status card shows real-time connection information:
+
+### Main status orb
+
+- **Gray dot**: VPN is disconnected
+- **Green pulsing dot**: VPN is active and running
+- The orb glows green when all services are operational
+
+### Service indicators
+
+<Info>
+Each service has its own status indicator showing whether it's running or stopped.
+</Info>
+
+**Client**: The SlipStream client binary that establishes the SOCKS5 proxy connection on port 5201.
+
+**HTTP Proxy**: The HTTP proxy server listening on `127.0.0.1:8080` (or `0.0.0.0:8080` for network sharing) that converts HTTP requests to SOCKS5.
+
+**System Proxy**: Shows whether your operating system's proxy settings have been automatically configured to use the HTTP proxy.
+
+## Reading logs
+
+The logs panel on the right side displays real-time connection activity:
+
+### Log types
+
+- **Standard logs** (white text): Normal operation messages including:
+  - Service startup/shutdown messages
+  - Connection events
+  - DNS resolution activity
+  - Proxy request handling
+
+- **Error logs** (red text): Issues that need attention:
+  - Connection failures
+  - Port conflicts (e.g., port 8080 or 5201 already in use)
+  - Configuration errors
+
+- **Success logs** (green text): Confirmation of successful operations
+
+### Log controls
+
+The logs header provides controls for managing log output:
+
+- **Clear button**: Removes all log entries from the display
+- **Verbose Logging toggle**: Enable detailed logging for troubleshooting (see below)
+
+<Note>
+Logs are displayed in real-time and automatically scroll to show the latest entries.
+</Note>
+
+## Testing connection
+
+After starting the VPN, verify it's working correctly:
+
+<Steps>
+  <Step title="Enable the Test Connection button">
+    The "Test Connection" button becomes active once the VPN is running.
+  </Step>
+
+  <Step title="Click Test Connection">
+    This performs a test request through the proxy to verify connectivity.
+  </Step>
+
+  <Step title="Check the logs">
+    The logs panel will show the test results:
+    - Success: Proxy connection is working
+    - Failure: Check error messages for troubleshooting hints
+  </Step>
+</Steps>
+
+## Verbose logging toggle
+
+Verbose logging provides detailed information for troubleshooting connection issues.
+
+### When to use verbose logging
+
+- Diagnosing connection problems
+- Debugging DNS resolution issues
+- Monitoring detailed HTTP/HTTPS request flow
+- Investigating proxy behavior
+
+### What verbose logging shows
+
+With verbose logging enabled, you'll see:
+
+- Every HTTP and HTTPS request (including CONNECT tunnels)
+- Detailed SOCKS5 connection establishment
+- Request and response status codes
+- Socket lifecycle events (open, close, errors)
+- Timing information
+
+<Warning>
+Verbose logging can generate a lot of output. Only enable it when needed for troubleshooting, as it may impact performance slightly.
+</Warning>
+
+### Enabling verbose logging
+
+<Steps>
+  <Step title="Locate the toggle">
+    In the logs panel header, find the "Verbose Logging" toggle switch.
+  </Step>
+
+  <Step title="Enable the toggle">
+    Click the toggle to enable verbose logging. The setting is saved automatically.
+  </Step>
+
+  <Step title="Observe detailed logs">
+    The logs panel will now show much more detailed information about all proxy activity.
+  </Step>
+</Steps>
+
+<Note>
+The verbose logging preference is persisted in `settings.json` and will be remembered between sessions.
+</Note>
+
+## Stopping the VPN
+
+To disconnect:
+
+1. Click the **"Stop VPN"** button
+2. All services will shut down gracefully
+3. If system proxy was configured automatically, it will be unconfigured (reverted to previous settings)
+4. Status indicators will return to "Stopped" state
+
+<Info>
+The VPN can be restarted at any time by clicking "Start VPN" again.
+</Info>

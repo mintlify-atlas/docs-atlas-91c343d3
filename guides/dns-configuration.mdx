@@ -1,0 +1,257 @@
+---
+title: DNS configuration
+description: Configure and test DNS resolvers for optimal SlipStream VPN performance
+---
+
+## What is DNS resolver
+
+The DNS resolver is a critical component of your SlipStream VPN setup. It determines which DNS server will be used to resolve domain names while the VPN is active.
+
+<Info>
+The DNS resolver setting should point to a DNS server that can properly resolve your SlipStream server domain and route traffic through the VPN tunnel.
+</Info>
+
+### Default setting
+
+By default, SlipStream GUI uses:
+
+```
+8.8.8.8:53
+```
+
+This points to Google's public DNS server on the standard DNS port (53).
+
+### Custom DNS resolver
+
+You can specify any DNS server in the format:
+
+```
+IP_ADDRESS:PORT
+```
+
+For example:
+- `1.1.1.1:53` (Cloudflare DNS)
+- `YOUR_SERVER_IP:53` (Your SlipStream server's DNS)
+- `9.9.9.9:53` (Quad9 DNS)
+
+## DNS Checker feature
+
+The DNS Checker is a powerful tool that tests multiple DNS servers concurrently to help you find the fastest and most reliable option.
+
+### Key capabilities
+
+<CardGroup cols={2}>
+  <Card title="Concurrent testing" icon="bolt">
+    Tests up to **100 DNS servers simultaneously** for fast results
+  </Card>
+  <Card title="Real-time results" icon="gauge">
+    Shows response times and resolution status for each server
+  </Card>
+  <Card title="One-click apply" icon="check">
+    Apply any working DNS server with a single click
+  </Card>
+  <Card title="Status validation" icon="shield-check">
+    Verifies that each DNS server can properly resolve your test domain
+  </Card>
+</CardGroup>
+
+## How to use DNS Checker
+
+<Steps>
+  <Step title="Open DNS Checker">
+    Click the **"DNS Check"** button in the header, or click the **"DNS Checker"** button in the settings panel.
+  </Step>
+
+  <Step title="Enter test domain">
+    In the modal that appears, enter a domain to test (e.g., `google.com`).
+    
+    <Note>
+    Use a well-known domain that should always be resolvable for accurate testing.
+    </Note>
+  </Step>
+
+  <Step title="Enter DNS servers">
+    Paste your list of DNS server IPs in the text area. You can:
+    - Enter one IP per line
+    - Paste large lists (up to 100 servers)
+    - Mix formats (the tool will extract valid IPs)
+    
+    Example:
+    ```
+    8.8.8.8
+    1.1.1.1
+    9.9.9.9
+    208.67.222.222
+    ```
+  </Step>
+
+  <Step title="Click Check DNS">
+    Click the **"Check DNS"** button to start testing all servers concurrently.
+  </Step>
+
+  <Step title="Review results">
+    The results table will populate in real-time showing:
+    - **DNS Server**: The IP address being tested
+    - **Status**: OK (green), WARN (yellow), or BAD (red)
+    - **Response Time**: How long the resolution took
+    - **Action**: "Use" button for successful servers
+  </Step>
+</Steps>
+
+### Understanding DNS Checker results
+
+**Status indicators:**
+
+<Tabs>
+  <Tab title="OK (Green)">
+    The DNS server successfully resolved the test domain.
+    
+    - Response time is shown in milliseconds
+    - Safe to use as your DNS resolver
+    - Click "Use" to apply immediately
+  </Tab>
+  
+  <Tab title="WARN (Yellow)">
+    The DNS server responded but had issues:
+    
+    - Slow response time
+    - Partial resolution
+    - May work but not optimal
+  </Tab>
+  
+  <Tab title="BAD (Red)">
+    The DNS server failed to resolve the domain:
+    
+    - Timeout
+    - Connection refused
+    - Invalid response
+    - Should not be used
+  </Tab>
+  
+  <Tab title="Testing (Gray)">
+    The test is still in progress for this server.
+    
+    Wait for the final result before making a decision.
+  </Tab>
+</Tabs>
+
+## Applying DNS results
+
+When you find a DNS server that works:
+
+<Steps>
+  <Step title="Identify successful servers">
+    Look for servers with **OK** status (green) in the results table.
+  </Step>
+
+  <Step title="Click Use button">
+    Click the **"Use"** button next to your chosen DNS server.
+  </Step>
+
+  <Step title="Automatic configuration">
+    The DNS Checker will:
+    - Set the DNS Resolver field to `IP_ADDRESS:53`
+    - Force port 53 (standard DNS port)
+    - Save the setting automatically
+    - Close the DNS Checker modal
+  </Step>
+
+  <Step title="Restart VPN if running">
+    If the VPN is currently running, stop and restart it to apply the new DNS resolver.
+  </Step>
+</Steps>
+
+<Info>
+The DNS Checker automatically appends port `:53` to the selected IP address, as this is the standard DNS port.
+</Info>
+
+## Troubleshooting DNS issues
+
+### All DNS servers show BAD status
+
+<Warning>
+If all servers fail, check your internet connection first.
+</Warning>
+
+Possible causes:
+- No internet connection
+- Firewall blocking DNS queries (port 53)
+- Network restrictions on DNS
+- Test domain is invalid or blocked
+
+**Solutions:**
+1. Try a different test domain (e.g., `google.com`, `cloudflare.com`)
+2. Check your firewall settings
+3. Ensure you're not behind a restrictive corporate proxy
+
+### DNS resolution works but VPN doesn't connect
+
+**Possible causes:**
+- DNS resolver can't access your SlipStream server
+- Domain configuration is incorrect
+- Server is down or unreachable
+
+**Solutions:**
+1. Use your **SlipStream server's IP** as the DNS resolver (e.g., `YOUR_SERVER_IP:53`)
+2. Verify your Domain setting matches your server configuration
+3. Check your server deployment and DNS records
+
+### Slow DNS resolution
+
+**Symptoms:**
+- Websites load slowly
+- Initial connection takes a long time
+- High response times in DNS Checker
+
+**Solutions:**
+1. Choose a DNS server with lower response time (< 50ms is ideal)
+2. Use a geographically closer DNS server
+3. Try public DNS services:
+   - Cloudflare: `1.1.1.1:53`
+   - Google: `8.8.8.8:53`
+   - Quad9: `9.9.9.9:53`
+
+### DNS Checker timeout
+
+<Note>
+The DNS Checker tests up to 100 servers concurrently, which may take 5-30 seconds depending on network conditions.
+</Note>
+
+If the checker seems stuck:
+1. Wait up to 30 seconds for all tests to complete
+2. Close and reopen the DNS Checker modal
+3. Test fewer servers at once (10-20 at a time)
+
+### Manual DNS configuration
+
+If you prefer to manually configure DNS:
+
+1. Find a reliable DNS server IP
+2. Enter it in the **DNS Resolver** field in this format: `IP:PORT`
+3. Use port `53` for standard DNS
+4. Click outside the field or press Enter to save
+5. Restart the VPN to apply changes
+
+<Info>
+The DNS resolver setting is stored in `settings.json` along with your other configuration. It persists between application restarts.
+</Info>
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Test regularly" icon="rotate">
+    DNS server performance can change. Run the DNS Checker periodically to ensure optimal performance.
+  </Card>
+  
+  <Card title="Use your server's DNS" icon="server">
+    For best results with SlipStream, use your own server's DNS resolver if available.
+  </Card>
+  
+  <Card title="Save working configs" icon="floppy-disk">
+    Use workspace presets to save different DNS configurations for different networks.
+  </Card>
+  
+  <Card title="Monitor logs" icon="file-lines">
+    Enable verbose logging to see DNS resolution activity and diagnose issues.
+  </Card>
+</CardGroup>

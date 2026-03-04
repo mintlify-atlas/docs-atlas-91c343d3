@@ -1,0 +1,553 @@
+---
+title: 'DNS setup'
+description: 'Configure DNS records for your SlipStream server'
+---
+
+## Overview
+
+Proper DNS configuration is critical for SlipStream to function correctly. This guide covers DNS requirements, record configuration, and troubleshooting common DNS issues.
+
+<Info>
+DNS changes can take anywhere from 5 minutes to 24 hours to propagate globally. Most changes propagate within 1 hour.
+</Info>
+
+## DNS Requirements
+
+For SlipStream to work properly, you need:
+
+### 1. A Domain Name
+
+You must own or control a domain name. You can:
+- Purchase from any domain registrar (Namecheap, GoDaddy, Cloudflare, etc.)
+- Use a subdomain of an existing domain you own
+- Register a free subdomain from services like FreeDNS or Duck DNS
+
+### 2. DNS Management Access
+
+You need access to configure DNS records for your domain, either through:
+- Your domain registrar's control panel
+- A dedicated DNS provider (Cloudflare, Route53, etc.)
+- Your server's DNS management interface
+
+### 3. Your Server's Public IP
+
+You need to know your server's public IP address:
+
+```bash
+# On your server, run:
+curl -4 ifconfig.me
+# or
+wget -qO- ifconfig.me
+```
+
+## DNS Record Configuration
+
+### Basic Setup (A Record)
+
+The minimum requirement is an A record pointing your domain to your server:
+
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| A | s.example.com | YOUR_SERVER_IP | 3600 |
+
+or if using a subdomain:
+
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| A | s | YOUR_SERVER_IP | 3600 |
+
+<Note>
+Replace `s.example.com` with your actual domain and `YOUR_SERVER_IP` with your server's IP address.
+</Note>
+
+### Recommended Configuration
+
+For optimal performance and reliability, configure these records:
+
+#### 1. A Record (Required)
+
+```dns
+Type: A
+Name: s (or your subdomain)
+Value: YOUR_SERVER_IP
+TTL: 3600
+```
+
+This is the primary record that points your domain to your server.
+
+#### 2. AAAA Record (Optional, for IPv6)
+
+If your server has an IPv6 address:
+
+```dns
+Type: AAAA
+Name: s (or your subdomain)
+Value: YOUR_SERVER_IPv6
+TTL: 3600
+```
+
+#### 3. CAA Record (Optional, for TLS certificates)
+
+If using Let's Encrypt for TLS certificates:
+
+```dns
+Type: CAA
+Name: s (or your subdomain)
+Value: 0 issue "letsencrypt.org"
+TTL: 3600
+```
+
+This authorizes Let's Encrypt to issue certificates for your domain.
+
+### Provider-Specific Instructions
+
+<Tabs>
+  <Tab title="Cloudflare">
+    1. Log in to your Cloudflare account
+    2. Select your domain
+    3. Go to **DNS** > **Records**
+    4. Click **Add record**
+    5. Choose **Type**: A
+    6. Enter **Name**: `s` (or your subdomain)
+    7. Enter **IPv4 address**: YOUR_SERVER_IP
+    8. **Proxy status**: Must be **DNS only** (gray cloud) ⚠️
+    9. Click **Save**
+    
+    <Warning>
+    CRITICAL: Do NOT enable Cloudflare proxy (orange cloud). SlipStream requires direct DNS resolution and will not work through Cloudflare's proxy.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Namecheap">
+    1. Log in to Namecheap
+    2. Go to **Domain List** > **Manage**
+    3. Select **Advanced DNS**
+    4. Click **Add New Record**
+    5. Choose **Type**: A Record
+    6. **Host**: `s` (or your subdomain)
+    7. **Value**: YOUR_SERVER_IP
+    8. **TTL**: Automatic or 3600
+    9. Click the checkmark to save
+  </Tab>
+  
+  <Tab title="GoDaddy">
+    1. Log in to GoDaddy
+    2. Go to **My Products** > **DNS**
+    3. Find your domain and click **Manage DNS**
+    4. Click **Add** under Records
+    5. Select **Type**: A
+    6. **Name**: `s` (or your subdomain)
+    7. **Value**: YOUR_SERVER_IP
+    8. **TTL**: 600 or 3600
+    9. Click **Save**
+  </Tab>
+  
+  <Tab title="AWS Route53">
+    1. Open Route53 console
+    2. Select **Hosted zones**
+    3. Click your domain name
+    4. Click **Create record**
+    5. **Record name**: `s` (or your subdomain)
+    6. **Record type**: A
+    7. **Value**: YOUR_SERVER_IP
+    8. **TTL**: 300 or 3600
+    9. **Routing policy**: Simple routing
+    10. Click **Create records**
+  </Tab>
+</Tabs>
+
+## DNS Propagation
+
+### What is DNS Propagation?
+
+DNS propagation is the time it takes for DNS changes to spread across the internet. When you update DNS records:
+
+1. Your DNS provider updates its authoritative nameservers (instant)
+2. Recursive DNS servers worldwide cache the old record (based on TTL)
+3. Cached records expire and servers fetch the new record (can take hours)
+4. All servers eventually have the new record (complete propagation)
+
+### Propagation Timeline
+
+- **Immediate**: Your DNS provider's servers (1-5 minutes)
+- **Fast**: Major DNS resolvers like Google (8.8.8.8) and Cloudflare (1.1.1.1) (5-30 minutes)
+- **Average**: Most ISP DNS servers (1-4 hours)
+- **Slow**: Some regional or caching servers (up to 24-48 hours)
+
+<Info>
+The TTL (Time To Live) value you set determines how long DNS resolvers cache your record. Lower TTL = faster propagation but more DNS queries.
+</Info>
+
+### Monitoring Propagation
+
+Check DNS propagation status using these tools:
+
+#### Command Line Tools
+
+```bash
+# Check using different DNS servers
+dig @8.8.8.8 s.example.com +short
+dig @1.1.1.1 s.example.com +short
+dig @208.67.222.222 s.example.com +short
+
+# Or using nslookup
+nslookup s.example.com 8.8.8.8
+nslookup s.example.com 1.1.1.1
+```
+
+#### Online Tools
+
+- [whatsmydns.net](https://www.whatsmydns.net/) - Check DNS propagation globally
+- [dnschecker.org](https://dnschecker.org/) - Multi-location DNS checker
+- [mxtoolbox.com](https://mxtoolbox.com/SuperTool.aspx) - Comprehensive DNS tools
+
+## Testing DNS Configuration
+
+### Before Connecting
+
+Verify your DNS configuration before attempting to connect:
+
+#### 1. Verify A Record Resolution
+
+```bash
+# Should return your server's IP address
+dig +short s.example.com
+
+# Or using nslookup
+nslookup s.example.com
+```
+
+Expected output:
+```
+123.45.67.89
+```
+
+#### 2. Test from Different DNS Resolvers
+
+```bash
+# Google DNS
+dig @8.8.8.8 s.example.com +short
+
+# Cloudflare DNS
+dig @1.1.1.1 s.example.com +short
+
+# OpenDNS
+dig @208.67.222.222 s.example.com +short
+```
+
+All should return the same IP address (your server's IP).
+
+#### 3. Verify Reverse DNS (Optional)
+
+```bash
+# Replace with your server's IP
+dig -x 123.45.67.89 +short
+```
+
+This checks if your IP resolves back to a domain (not critical for SlipStream).
+
+### After Server Deployment
+
+#### 4. Test Server Connectivity
+
+```bash
+# Test HTTP connectivity
+curl -I http://s.example.com
+
+# Test HTTPS connectivity (if TLS is configured)
+curl -I https://s.example.com
+```
+
+#### 5. Verify DNS Resolution from Your Server
+
+On your SlipStream server:
+
+```bash
+# Check if the server can resolve its own domain
+dig +short s.example.com
+
+# Should return the server's public IP
+curl -4 ifconfig.me
+```
+
+Both should return the same IP address.
+
+## Using Custom DNS Resolver
+
+### Why Use a Custom DNS Resolver?
+
+SlipStream GUI allows you to specify a custom DNS resolver for several reasons:
+
+1. **Bypass DNS censorship**: Some ISPs or countries block certain domains
+2. **Improve reliability**: Your ISP's DNS might be slow or unreliable
+3. **Direct resolution**: Use your server's DNS for better privacy
+4. **Troubleshooting**: Test different resolvers to find the most reliable
+
+### Recommended DNS Resolvers
+
+| Provider | IP Address | Notes |
+|----------|------------|-------|
+| Google DNS | 8.8.8.8:53 | Fast, reliable, widely available |
+| Cloudflare DNS | 1.1.1.1:53 | Privacy-focused, very fast |
+| Quad9 | 9.9.9.9:53 | Security-focused, blocks malware |
+| OpenDNS | 208.67.222.222:53 | Content filtering available |
+| Your Server | YOUR_IP:53 | Direct resolution, most private |
+
+<Note>
+Always specify the port (`:53`) when entering a DNS resolver in SlipStream GUI.
+</Note>
+
+### Setting DNS Resolver in SlipStream GUI
+
+1. Open SlipStream GUI
+2. In the **DNS Resolver** field, enter your chosen resolver (e.g., `8.8.8.8:53`)
+3. Click **"DNS Checker"** to test different resolvers
+4. Click **"Use"** on any **OK** result to apply it automatically
+5. Click **"Start VPN"** to connect
+
+### Using Your Server as DNS Resolver
+
+For maximum privacy, use your SlipStream server as the DNS resolver:
+
+```
+DNS Resolver: YOUR_SERVER_IP:53
+Domain: s.example.com
+```
+
+This ensures:
+- All DNS queries go through your server
+- Your ISP can't see which domains you're resolving
+- DNS responses aren't cached by third-party resolvers
+
+<Info>
+SlipStream GUI includes a built-in DNS Checker that tests multiple DNS resolvers simultaneously (up to 100 at once) and shows which ones work best for your network.
+</Info>
+
+## Troubleshooting DNS Issues
+
+### Issue: Domain Doesn't Resolve
+
+**Symptoms:**
+- `dig` or `nslookup` returns no results
+- SlipStream GUI can't connect to server
+
+**Solutions:**
+
+1. **Check DNS record configuration**
+   ```bash
+   # Verify record exists
+   dig s.example.com +trace
+   ```
+
+2. **Wait for propagation**
+   - Changes can take up to 24 hours
+   - Use online propagation checkers
+
+3. **Verify nameservers**
+   ```bash
+   # Check your domain's nameservers
+   dig NS example.com +short
+   ```
+
+4. **Clear local DNS cache**
+   ```bash
+   # macOS
+   sudo dscacheutil -flushcache
+   sudo killall -HUP mDNSResponder
+   
+   # Windows (Command Prompt as Admin)
+   ipconfig /flushdns
+   
+   # Linux
+   sudo systemd-resolve --flush-caches
+   ```
+
+### Issue: Slow DNS Resolution
+
+**Symptoms:**
+- Connections take a long time to establish
+- Intermittent timeouts
+
+**Solutions:**
+
+1. **Use a faster DNS resolver**
+   - Try 1.1.1.1:53 (Cloudflare) or 8.8.8.8:53 (Google)
+
+2. **Test resolver performance**
+   ```bash
+   # Time DNS query
+   time dig @8.8.8.8 s.example.com +short
+   time dig @1.1.1.1 s.example.com +short
+   ```
+
+3. **Use SlipStream GUI DNS Checker**
+   - Built-in tool to test multiple resolvers
+   - Shows response time for each
+   - Click "Use" on the fastest resolver
+
+### Issue: DNS Works but Connection Fails
+
+**Symptoms:**
+- `dig` resolves correctly
+- SlipStream GUI still can't connect
+
+**Solutions:**
+
+1. **Verify server is running**
+   ```bash
+   # On your server
+   sudo systemctl status slipstream-server
+   ```
+
+2. **Check firewall rules**
+   ```bash
+   # Ensure ports are open
+   sudo ufw status
+   sudo firewall-cmd --list-all
+   ```
+
+3. **Test port connectivity**
+   ```bash
+   # Test if server is reachable
+   telnet s.example.com 443
+   # or
+   nc -zv s.example.com 443
+   ```
+
+4. **Verify TLS certificates**
+   ```bash
+   # Check certificate validity
+   openssl s_client -connect s.example.com:443
+   ```
+
+### Issue: Cloudflare Proxy Enabled
+
+**Symptoms:**
+- DNS resolves to Cloudflare IP instead of your server
+- Connection fails with timeout or proxy errors
+
+**Solutions:**
+
+1. **Disable Cloudflare proxy**
+   - Go to Cloudflare DNS settings
+   - Click the orange cloud icon next to your record
+   - Change to gray cloud (DNS only)
+   - Wait for propagation
+
+2. **Verify proxy status**
+   ```bash
+   # Should return YOUR server IP, not Cloudflare IP
+   dig s.example.com +short
+   ```
+
+<Warning>
+SlipStream WILL NOT work with Cloudflare proxy enabled. Always use DNS-only mode (gray cloud).
+</Warning>
+
+### Issue: Wrong IP Address Returned
+
+**Symptoms:**
+- DNS resolves to wrong IP address
+- Old IP address still cached
+
+**Solutions:**
+
+1. **Verify current configuration**
+   - Check your DNS provider's control panel
+   - Ensure A record points to correct IP
+
+2. **Check TTL and wait**
+   - Old record may still be cached
+   - Wait for TTL to expire (check propagation)
+
+3. **Use direct nameserver query**
+   ```bash
+   # Query authoritative nameserver directly
+   dig @ns1.your-provider.com s.example.com +short
+   ```
+
+4. **Clear caches everywhere**
+   - Local DNS cache (see above)
+   - Browser DNS cache (restart browser)
+   - Router DNS cache (restart router)
+
+### Issue: DNS Works Intermittently
+
+**Symptoms:**
+- Sometimes resolves, sometimes fails
+- Connection drops randomly
+
+**Solutions:**
+
+1. **Check for multiple A records**
+   ```bash
+   # Should return single IP
+   dig s.example.com +short
+   ```
+   Remove duplicate or incorrect records.
+
+2. **Test DNS stability**
+   ```bash
+   # Query multiple times
+   for i in {1..10}; do dig @8.8.8.8 s.example.com +short; done
+   ```
+   All results should be identical.
+
+3. **Use more reliable DNS resolver**
+   - Switch to 8.8.8.8:53 or 1.1.1.1:53
+   - Test with DNS Checker tool
+
+4. **Check server uptime**
+   ```bash
+   # On your server
+   uptime
+   sudo systemctl status slipstream-server
+   ```
+
+## Advanced DNS Configuration
+
+### Multiple Servers (Load Balancing)
+
+If you have multiple SlipStream servers:
+
+```dns
+Type: A
+Name: s
+Value: SERVER_IP_1
+TTL: 300
+
+Type: A
+Name: s
+Value: SERVER_IP_2
+TTL: 300
+```
+
+DNS resolvers will rotate between IPs (round-robin).
+
+### Geo-Based Routing
+
+Use Route53 or Cloudflare geo-routing to direct users to nearest server:
+
+- North America: Server in USA
+- Europe: Server in Germany
+- Asia: Server in Singapore
+
+### Split Horizon DNS
+
+Different DNS responses based on query source:
+
+- Internal network: Resolves to internal IP
+- External network: Resolves to public IP
+
+Useful for complex network setups.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connect your client" icon="plug" href="/quickstart">
+    Configure SlipStream GUI to connect to your server
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting/common-issues">
+    Resolve common connection and DNS issues
+  </Card>
+</CardGroup>

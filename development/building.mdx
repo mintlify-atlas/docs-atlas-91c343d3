@@ -1,0 +1,427 @@
+---
+title: Building the application
+description: Build SlipStream GUI for distribution on macOS, Windows, and Linux
+---
+
+This guide covers how to build SlipStream GUI for distribution on different platforms.
+
+## Prerequisites
+
+Before building, ensure you have:
+
+1. Completed the [development setup](/development/setup)
+2. Downloaded the SlipStream client binaries
+3. Installed all dependencies
+
+## Quick start
+
+<Steps>
+  <Step title="Install dependencies">
+    Install all required npm packages (one-time setup):
+    
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+    </CodeGroup>
+    
+    This will download:
+    - Electron
+    - electron-builder
+    - All required npm packages (socks-proxy-agent, socks, http-proxy, ip)
+  </Step>
+  
+  <Step title="Download binaries">
+    Download the SlipStream client binaries:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run download:binaries
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Build the application">
+    Build for your target platform(s):
+    
+    <CodeGroup>
+    ```bash macOS
+    npm run build:mac
+    ```
+    
+    ```bash Windows
+    npm run build:win
+    ```
+    
+    ```bash Linux
+    npm run build:linux
+    ```
+    
+    ```bash All platforms
+    npm run build:all
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Find the output">
+    Built applications will be in the `dist/` folder:
+    - **macOS**: `SlipStream-GUI-macOS-*.dmg`
+    - **Windows**: `SlipStream-GUI-Windows-*.exe`
+    - **Linux**: `SlipStream-GUI-Linux-*.AppImage`, `*.deb`
+  </Step>
+</Steps>
+
+## Platform-specific builds
+
+### macOS
+
+<Tabs>
+  <Tab title="Universal build">
+    Build for both Apple Silicon and Intel:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:mac
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-macOS-ARM64.dmg` and `SlipStream-GUI-macOS-Intel.dmg`
+  </Tab>
+  
+  <Tab title="ARM64 only">
+    Build for Apple Silicon (M1/M2/M3) only:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:mac:arm64
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-macOS-ARM64.dmg`
+  </Tab>
+  
+  <Tab title="Intel only">
+    Build for Intel processors only:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:mac:x64
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-macOS-Intel.dmg`
+  </Tab>
+</Tabs>
+
+**What gets bundled**:
+- Electron runtime
+- Node.js dependencies
+- `binaries/slipstream-client-mac-arm64`
+- `binaries/slipstream-client-mac-intel`
+- Application assets and UI
+
+### Windows
+
+<Tabs>
+  <Tab title="Installer + Portable">
+    Build both installer and portable versions:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:win
+    ```
+    </CodeGroup>
+    
+    **Output**:
+    - `dist/SlipStream-GUI-Windows-x64.exe` (installer)
+    - `dist/SlipStream-GUI-Windows-x64-Portable.exe`
+  </Tab>
+  
+  <Tab title="64-bit only">
+    Build 64-bit version only:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:win:x64
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-Windows-x64.exe`
+  </Tab>
+  
+  <Tab title="32-bit only">
+    Build 32-bit version only:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:win:ia32
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-Windows-x86.exe`
+  </Tab>
+  
+  <Tab title="Portable only">
+    Build portable version only:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:win:portable
+    ```
+    </CodeGroup>
+    
+    **Output**: `dist/SlipStream-GUI-Windows-x64-Portable.exe`
+  </Tab>
+</Tabs>
+
+**What gets bundled**:
+- Electron runtime
+- Node.js dependencies
+- `binaries/slipstream-client-win.exe`
+- Application assets and UI
+
+### Linux
+
+<Tabs>
+  <Tab title="All formats">
+    Build AppImage and DEB packages:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:linux
+    ```
+    </CodeGroup>
+    
+    **Output**:
+    - `dist/SlipStream-GUI-Linux-x64.AppImage`
+    - `dist/SlipStream-GUI-Linux-x64.deb`
+  </Tab>
+  
+  <Tab title="x64 only">
+    Build for 64-bit Linux:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:linux:x64
+    ```
+    </CodeGroup>
+    
+    **Output**: AppImage and DEB for x64
+  </Tab>
+  
+  <Tab title="ARM64 only">
+    Build for ARM64 Linux:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build:linux:arm64
+    ```
+    </CodeGroup>
+    
+    **Output**: AppImage and DEB for ARM64
+  </Tab>
+</Tabs>
+
+**What gets bundled**:
+- Electron runtime
+- Node.js dependencies
+- `binaries/slipstream-client-linux`
+- Application assets and UI
+
+## electron-builder configuration
+
+The build configuration is defined in `package.json` under the `build` key:
+
+```json
+{
+  "build": {
+    "appId": "com.slipstream.gui",
+    "productName": "SlipStream GUI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*",
+      "!*.md",
+      "!settings.json"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities",
+      "extraResources": [
+        {
+          "from": "binaries/slipstream-client-mac-arm64",
+          "to": "binaries/slipstream-client-mac-arm64"
+        },
+        {
+          "from": "binaries/slipstream-client-mac-intel",
+          "to": "binaries/slipstream-client-mac-intel"
+        }
+      ]
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "extraResources": [
+        {
+          "from": "binaries/slipstream-client-win.exe",
+          "to": "binaries/slipstream-client-win.exe"
+        }
+      ]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network",
+      "extraResources": [
+        {
+          "from": "binaries/slipstream-client-linux",
+          "to": "binaries/slipstream-client-linux"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Key configuration options
+
+- **extraResources**: Bundles binaries into the app's Resources folder
+- **files**: Specifies which files to include/exclude from the build
+- **target**: Defines output format (DMG, NSIS, AppImage, etc.)
+- **category**: App category for system integration
+
+## Binary bundling
+
+The build process automatically verifies and bundles the required binaries:
+
+1. **Verification step**: Before building, the `verify-binaries.js` script runs automatically (defined as `prebuild:*` scripts in package.json)
+2. **Checks performed**:
+   - Binary files exist in the `binaries/` directory
+   - Files are not Git LFS pointers
+   - Files are larger than 10KB (real binaries, not placeholders)
+3. **Bundling**: electron-builder copies binaries to the app's Resources folder
+
+<Warning>
+  The build will fail if required binaries are missing. Always run `npm run download:binaries` before building.
+</Warning>
+
+## Output directory
+
+All built applications are placed in the `dist/` folder:
+
+```
+dist/
+├── SlipStream-GUI-macOS-ARM64.dmg
+├── SlipStream-GUI-macOS-Intel.dmg
+├── SlipStream-GUI-Windows-x64.exe
+├── SlipStream-GUI-Windows-x64-Portable.exe
+├── SlipStream-GUI-Windows-x86.exe
+├── SlipStream-GUI-Linux-x64.AppImage
+└── SlipStream-GUI-Linux-x64.deb
+```
+
+The `dist/` directory also contains temporary build artifacts that can be safely deleted.
+
+## What gets bundled
+
+The built applications are **completely self-contained**:
+
+- ✅ Electron runtime
+- ✅ All Node.js dependencies
+- ✅ SlipStream client binaries (platform-specific)
+- ✅ Application UI and assets
+- ✅ No internet connection required to run
+
+Users can install and use the app without any additional downloads or setup.
+
+## Distribution
+
+The built DMG (macOS), EXE (Windows), and AppImage/DEB (Linux) installers can be distributed directly to users. They include everything needed to run the application.
+
+### User experience
+
+**After download**:
+1. ✅ User downloads DMG/EXE/AppImage installer
+2. ✅ User installs (one click)
+3. ✅ User runs the app
+4. ✅ **Everything works automatically - no manual actions needed!**
+
+**What's hidden from users**:
+- ✅ SlipStream client binaries are bundled inside the app
+- ✅ Users never see these files
+- ✅ No terminal commands needed
+- ✅ No chmod or permission setup needed
+- ✅ App automatically handles all permissions
+
+## Troubleshooting
+
+### Build fails with permission errors
+
+The app automatically sets execute permissions on first run.
+
+For development testing:
+
+<CodeGroup>
+```bash macOS
+chmod +x binaries/slipstream-client-mac-arm64
+chmod +x binaries/slipstream-client-mac-intel
+```
+
+```bash Linux
+chmod +x binaries/slipstream-client-linux
+```
+</CodeGroup>
+
+### Missing dependencies
+
+1. Run `npm install` again
+2. Check that all dependencies in `package.json` are installed
+3. Clear npm cache: `npm cache clean --force`
+
+### App doesn't find SlipStream client
+
+1. Make sure the binaries are present under `binaries/`:
+   - `binaries/slipstream-client-mac-arm64`
+   - `binaries/slipstream-client-mac-intel`
+   - `binaries/slipstream-client-win.exe`
+   - `binaries/slipstream-client-linux`
+2. Check the build logs to see if files were copied correctly
+3. The app automatically finds binaries in the Resources folder when packaged
+
+### Binaries are Git LFS pointers
+
+If the verify script reports LFS pointers instead of real binaries:
+
+<CodeGroup>
+```bash Download binaries
+npm run download:binaries
+```
+
+```bash Or pull LFS files
+git lfs pull
+```
+</CodeGroup>
+
+## Development mode testing
+
+To test the app during development without building:
+
+<CodeGroup>
+```bash npm
+npm start
+```
+</CodeGroup>
+
+This runs the app using the current source code with hot-reload capabilities.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Learn how to contribute to the project
+  </Card>
+  
+  <Card title="Development overview" icon="book" href="/development/overview">
+    Understand the architecture and tech stack
+  </Card>
+</CardGroup>

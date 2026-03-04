@@ -1,0 +1,146 @@
+---
+title: 'Server overview'
+description: 'Understanding SlipStream server architecture and requirements'
+---
+
+## What is a SlipStream server?
+
+A SlipStream server is the backend component that enables secure VPN tunneling for SlipStream GUI clients. It acts as an encrypted tunnel endpoint, routing your traffic through a remote server to provide privacy and circumvent network restrictions.
+
+The server creates a SOCKS5 proxy endpoint that clients connect to through an encrypted tunnel, ensuring all traffic between your device and the server remains secure and private.
+
+## Why you need a SlipStream server
+
+To use SlipStream GUI, you need access to a running SlipStream server. This server:
+
+- **Provides the tunnel endpoint**: Acts as the secure gateway for your VPN connection
+- **Routes your traffic**: Forwards your requests through its network connection
+- **Encrypts communications**: Ensures privacy between your device and the server
+- **Bypasses restrictions**: Allows access to content that may be blocked in your region
+
+You can either:
+- Deploy your own server (recommended for full control)
+- Use a server provided by someone you trust
+
+<Warning>
+Never use untrusted SlipStream servers. The server operator can potentially monitor all traffic passing through it. Always deploy your own server or use one from a trusted source.
+</Warning>
+
+## Server requirements
+
+To deploy your own SlipStream server, you'll need:
+
+### Hardware/VPS Requirements
+- A Linux server (physical or virtual)
+- Supported distributions:
+  - Fedora
+  - Rocky Linux
+  - CentOS
+  - Debian
+  - Ubuntu
+- Root or sudo access on the server
+- Adequate bandwidth for your expected traffic
+
+### Network Requirements
+- A public IP address
+- Open ports for HTTP/HTTPS traffic
+- Ability to configure firewall rules
+
+### Domain Requirements
+- A domain name you control
+- Access to configure DNS records for the domain
+- Ability to set up A records and other DNS configurations
+
+<Info>
+A VPS with 1GB RAM and 1 CPU core is typically sufficient for personal use. Scale up based on the number of concurrent users and traffic volume.
+</Info>
+
+## slipstream-rust-deploy project
+
+The recommended way to deploy a SlipStream server is using the **[slipstream-rust-deploy](https://github.com/AliRezaBeigy/slipstream-rust-deploy)** project. This deployment tool provides:
+
+### Key Features
+
+- ✅ **One-command installation**: Automated server deployment with minimal manual steps
+- ✅ **DNS configuration guide**: Step-by-step DNS setup instructions
+- ✅ **Multiple deployment modes**: Support for SOCKS proxy or SSH tunneling
+- ✅ **Prebuilt binaries**: Fast installation for supported Linux platforms
+- ✅ **Systemd integration**: Automatic service management for reliability
+- ✅ **TLS certificates**: Automatic certificate generation for secure connections
+
+### Quick Installation
+
+The deployment process is simplified to a single command:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/AliRezaBeigy/slipstream-rust-deploy/master/slipstream-rust-deploy.sh)
+```
+
+This script will:
+1. Detect your Linux distribution
+2. Install required dependencies
+3. Download and install SlipStream server binaries
+4. Configure systemd service
+5. Set up TLS certificates
+6. Guide you through DNS configuration
+
+<Note>
+For detailed deployment instructions, see the [Server deployment](/server/deployment) page.
+</Note>
+
+## Architecture overview
+
+Understanding how SlipStream works helps troubleshoot issues and optimize your setup:
+
+### Client-Server Architecture
+
+```
+SlipStream GUI Client (Your Device)
+       ↓ HTTP/HTTPS Traffic
+ HTTP Proxy Server (127.0.0.1:8080)
+       ↓ SOCKS5 Protocol
+ SOCKS5 Client (127.0.0.1:5201)
+       ↓ Encrypted Tunnel
+   SlipStream Server (Your VPS)
+       ↓ Decrypted Traffic
+        The Internet
+```
+
+### Component Breakdown
+
+1. **SlipStream GUI**: The desktop application that manages the client-side components
+2. **HTTP Proxy (Port 8080)**: Converts HTTP/HTTPS requests to SOCKS5 protocol
+3. **SOCKS5 Client (Port 5201)**: Establishes encrypted tunnel to the server
+4. **SlipStream Server**: Receives encrypted traffic and forwards it to the internet
+
+### Traffic Flow
+
+1. Your applications send HTTP/HTTPS requests to the local proxy (127.0.0.1:8080)
+2. The HTTP proxy converts these to SOCKS5 protocol
+3. The SOCKS5 client encrypts and tunnels the traffic to your SlipStream server
+4. The server decrypts and forwards requests to their final destination
+5. Responses follow the reverse path back to your application
+
+### DNS Resolution
+
+DNS plays a critical role in SlipStream's operation:
+
+- The client uses a specified DNS resolver (default: 8.8.8.8:53 or your server's IP)
+- DNS queries can be routed through the tunnel or resolved locally
+- Proper DNS configuration ensures successful server discovery
+- Custom DNS resolvers can improve connection reliability
+
+<Info>
+SlipStream GUI includes a built-in DNS Checker tool to help you find the most reliable DNS resolver for your network.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy your server" icon="rocket" href="/server/deployment">
+    Follow the step-by-step guide to set up your SlipStream server
+  </Card>
+  <Card title="Configure DNS" icon="globe" href="/server/dns-setup">
+    Learn how to configure DNS records for your SlipStream server
+  </Card>
+</CardGroup>

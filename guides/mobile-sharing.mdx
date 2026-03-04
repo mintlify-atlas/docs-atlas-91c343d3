@@ -1,0 +1,389 @@
+---
+title: Sharing VPN with mobile devices
+description: Use your PC's VPN connection on your iOS or Android device over Wi-Fi
+---
+
+## How it works
+
+SlipStream GUI's HTTP proxy server listens on `0.0.0.0:8080`, making it accessible to other devices on your local network. This allows your mobile devices to use your PC's VPN connection by configuring them to use your PC as a proxy.
+
+<Info>
+The HTTP proxy port (8080) is accessible from your network, enabling seamless VPN sharing with phones, tablets, and other devices.
+</Info>
+
+### Architecture
+
+```
+Mobile Device (Phone/Tablet)
+    ↓ Wi-Fi → HTTP Proxy Request
+Your PC (127.0.0.1:8080 / LAN_IP:8080)
+    ↓ SOCKS5
+SlipStream Client (127.0.0.1:5201)
+    ↓ Encrypted Tunnel
+SlipStream VPN Server
+```
+
+## Prerequisites
+
+Before setting up mobile VPN sharing:
+
+<Steps>
+  <Step title="Same network requirement">
+    Your PC and mobile device **must be connected to the same Wi-Fi network**.
+    
+    <Warning>
+    This will not work if your phone is on cellular data or a different Wi-Fi network.
+    </Warning>
+  </Step>
+
+  <Step title="VPN must be running">
+    Start the VPN on your PC by clicking **"Start VPN"** in SlipStream GUI.
+  </Step>
+
+  <Step title="Find your PC's IP address">
+    You need your PC's local network IP address (see below for instructions).
+  </Step>
+</Steps>
+
+## Finding PC IP address
+
+You need to know your PC's local IP address to configure the mobile device proxy.
+
+<Tabs>
+  <Tab title="macOS">
+    **Option 1: Using Terminal**
+    
+    Open Terminal and run:
+    ```bash
+    ifconfig | grep "inet " | grep -v 127.0.0.1
+    ```
+    
+    Or:
+    ```bash
+    ip addr show
+    ```
+    
+    **Option 2: System Settings**
+    
+    1. Open **System Settings**
+    2. Click **Network**
+    3. Select your active connection (Wi-Fi or Ethernet)
+    4. Your IP address is displayed (e.g., `192.168.1.100`)
+  </Tab>
+  
+  <Tab title="Windows">
+    **Option 1: Using Command Prompt**
+    
+    Open Command Prompt and run:
+    ```cmd
+    ipconfig
+    ```
+    
+    Look for **"IPv4 Address"** under your active network adapter (Wi-Fi or Ethernet).
+    
+    **Option 2: Settings**
+    
+    1. Open **Settings**
+    2. Go to **Network & Internet**
+    3. Click **Wi-Fi** or **Ethernet** (whichever is active)
+    4. Click **Properties**
+    5. Find **IPv4 address**
+  </Tab>
+  
+  <Tab title="Linux">
+    **Using Terminal**
+    
+    Open Terminal and run:
+    ```bash
+    ip addr show
+    ```
+    
+    Or:
+    ```bash
+    hostname -I
+    ```
+    
+    Look for an address like `192.168.1.XXX` or `10.0.0.XXX`.
+  </Tab>
+</Tabs>
+
+<Note>
+The IP address will typically start with:
+- `192.168.x.x` (most common for home networks)
+- `10.0.x.x` (some routers)
+- `172.16.x.x` to `172.31.x.x` (less common)
+</Note>
+
+## iOS configuration steps
+
+Configure your iPhone or iPad to use your PC's VPN connection:
+
+<Steps>
+  <Step title="Open Wi-Fi Settings">
+    On your iPhone/iPad, go to **Settings** → **Wi-Fi**
+  </Step>
+
+  <Step title="Select your network">
+    Tap the **(i)** info icon next to your connected Wi-Fi network
+  </Step>
+
+  <Step title="Scroll to HTTP Proxy section">
+    Scroll down to the **"HTTP Proxy"** section at the bottom
+  </Step>
+
+  <Step title="Select Manual">
+    Tap **"Manual"** to enable manual proxy configuration
+  </Step>
+
+  <Step title="Enter proxy details">
+    - **Server**: Enter your PC's IP address (e.g., `192.168.1.100`)
+    - **Port**: Enter `8080`
+    - **Authentication**: Leave this **OFF**
+    
+    <Info>
+    Make sure to enter only the IP address in the Server field, not "http://" or any other prefix.
+    </Info>
+  </Step>
+
+  <Step title="Save configuration">
+    Tap **"Save"** in the top right corner
+  </Step>
+
+  <Step title="Test connection">
+    Open Safari or any app and verify that:
+    - Websites load normally
+    - Traffic is going through the VPN
+    - Check your IP at a site like whatismyip.com
+  </Step>
+</Steps>
+
+### Disabling proxy on iOS
+
+To disconnect from the VPN:
+
+1. Go back to **Settings** → **Wi-Fi** → **(i)**
+2. Under **HTTP Proxy**, select **"Off"**
+3. Tap **"Save"**
+
+<Warning>
+Your iOS device will route **all** internet traffic through your PC's VPN while the proxy is enabled. Remember to disable it when you're done.
+</Warning>
+
+## Android configuration steps
+
+Configure your Android phone or tablet to use your PC's VPN:
+
+<Steps>
+  <Step title="Open Wi-Fi Settings">
+    On your Android device, go to **Settings** → **Wi-Fi**
+  </Step>
+
+  <Step title="Access network settings">
+    Long-press on your connected Wi-Fi network name, then select:
+    - **"Modify network"** or
+    - **"Network details"** (depends on Android version)
+  </Step>
+
+  <Step title="Show advanced options">
+    Tap **"Advanced options"** or expand the advanced settings section
+    
+    <Note>
+    On some Android versions, you may need to tap "Show advanced options" first.
+    </Note>
+  </Step>
+
+  <Step title="Configure proxy">
+    Under **"Proxy"**, select **"Manual"** from the dropdown
+  </Step>
+
+  <Step title="Enter proxy details">
+    - **Proxy hostname**: Enter your PC's IP address (e.g., `192.168.1.100`)
+    - **Proxy port**: Enter `8080`
+    - **Bypass proxy for**: Leave empty or add local addresses:
+      ```
+      localhost,127.0.0.1
+      ```
+  </Step>
+
+  <Step title="Save configuration">
+    Tap **"Save"** or **"Connect"**
+  </Step>
+
+  <Step title="Test connection">
+    Open Chrome or any app and verify:
+    - Internet connection works
+    - Traffic is routed through VPN
+    - Check your IP address
+  </Step>
+</Steps>
+
+### Android version differences
+
+<Info>
+Proxy settings location may vary by Android version and manufacturer:
+- **Settings** → **Network & Internet** → **Wi-Fi** → (tap network) → **Advanced** → **Proxy**
+- **Settings** → **Connections** → **Wi-Fi** → (tap gear icon) → **Advanced** → **Proxy**
+</Info>
+
+### Disabling proxy on Android
+
+To disconnect from the VPN:
+
+1. Go back to **Settings** → **Wi-Fi**
+2. Long-press your network → **"Modify network"**
+3. Expand **Advanced options**
+4. Set **Proxy** to **"None"**
+5. Tap **"Save"**
+
+## Troubleshooting tips
+
+### Can't connect from mobile device
+
+<Tabs>
+  <Tab title="Check network">
+    **Verify same network:**
+    - PC and mobile device must be on the **same Wi-Fi network**
+    - Cellular data will not work
+    - Guest networks may block device-to-device communication
+    
+    **Try:**
+    - Disconnect and reconnect to Wi-Fi on both devices
+    - Ensure you're on the main network, not a guest network
+  </Tab>
+  
+  <Tab title="Check firewall">
+    **Firewall may be blocking port 8080:**
+    
+    **Windows:**
+    1. Open Windows Defender Firewall
+    2. Click "Allow an app or feature through Windows Defender Firewall"
+    3. Find SlipStream GUI or allow port 8080
+    
+    **macOS:**
+    1. System Settings → Network → Firewall
+    2. Click Firewall Options
+    3. Add SlipStream GUI to allowed apps
+    
+    **Linux:**
+    ```bash
+    sudo ufw allow 8080/tcp
+    ```
+  </Tab>
+  
+  <Tab title="Verify IP address">
+    **Double-check your PC's IP:**
+    - Make sure you're using the correct IP address
+    - IP addresses can change if assigned by DHCP
+    - Verify with `ipconfig` (Windows) or `ifconfig` (Mac/Linux)
+    
+    **Common mistakes:**
+    - Using `127.0.0.1` (only works on PC itself)
+    - Using external/public IP instead of local IP
+    - Typos in IP address
+  </Tab>
+  
+  <Tab title="VPN not running">
+    **Ensure VPN is active on PC:**
+    - Check that SlipStream GUI shows "Connected"
+    - Verify HTTP Proxy status shows "Running"
+    - Test the connection on your PC first
+  </Tab>
+</Tabs>
+
+### Connection is very slow
+
+**Possible causes:**
+- Your PC is acting as a proxy, adding overhead
+- Network congestion
+- VPN server is slow or far away
+- PC performance issues
+
+**Solutions:**
+1. Ensure your PC has a good Wi-Fi signal
+2. Use Ethernet on your PC if possible
+3. Close unnecessary applications on your PC
+4. Try a different DNS resolver (use DNS Checker)
+5. Check VPN server performance
+
+### Some apps don't work
+
+<Warning>
+Some mobile apps may bypass system proxy settings and won't use the VPN.
+</Warning>
+
+**Apps that may not work:**
+- Banking apps with strict security
+- Some streaming services
+- Apps that pin certificates
+- Apps that require direct connections
+
+**Workaround:**
+- These apps will use your regular connection (not VPN)
+- For critical apps, consider using a mobile VPN app instead
+
+### IP address changed
+
+<Note>
+Your PC's IP address may change after:
+- Router restart
+- PC restart
+- DHCP lease renewal
+- Network reconnection
+</Note>
+
+**Solution:**
+1. Find your PC's new IP address (see "Finding PC IP address" above)
+2. Update the proxy configuration on your mobile device
+3. Save the new settings
+
+**To prevent IP changes:**
+- Configure a static IP for your PC in router settings (DHCP reservation)
+- This ensures your PC always gets the same IP address
+
+### "Proxy authentication required" error
+
+<Info>
+SlipStream GUI's HTTP proxy does **not** require authentication for client connections.
+</Info>
+
+If you see this error:
+1. Ensure the "Authentication" field is empty or turned **OFF**
+2. Remove any username/password from proxy settings
+3. Re-save the configuration
+
+### Can't save proxy settings
+
+On some Android devices:
+- Corporate/MDM-managed devices may prevent proxy changes
+- School-issued devices may have restrictions
+- Some carriers block proxy configuration
+
+**Solution:**
+- Check with your device administrator
+- Try using a personal device instead
+
+## Security considerations
+
+<Warning>
+**Important security notes when sharing VPN:**
+</Warning>
+
+1. **Trust your network**: Only share VPN on trusted Wi-Fi networks you control (home, not public).
+
+2. **All traffic routes through your PC**: Your mobile device's internet activity goes through your PC and VPN.
+
+3. **PC must stay on**: If your PC sleeps or turns off, mobile devices lose connection.
+
+4. **Firewall configuration**: Opening port 8080 on your PC may expose it to other devices on the network.
+
+5. **No authentication**: The HTTP proxy on port 8080 doesn't require a password (anyone on your network can use it).
+
+<Info>
+**Best practice**: Only enable VPN sharing when needed, and disable it when you're done or leave your home network.
+</Info>
+
+## Advanced: SOCKS5 authentication
+
+While the HTTP proxy (port 8080) doesn't support authentication, the underlying SOCKS5 proxy (port 5201) can be configured with authentication. However, most mobile devices don't have built-in SOCKS5 support, so this is primarily useful for advanced users with specialized proxy apps.
+
+See the [Advanced Settings](/guides/advanced-settings) guide for information on configuring SOCKS5 authentication.

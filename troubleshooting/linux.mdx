@@ -1,0 +1,534 @@
+---
+title: "Linux troubleshooting"
+description: "Solve Linux-specific issues with SlipStream GUI"
+---
+
+## AppImage vs DEB package
+
+SlipStream GUI is available in two formats for Linux. Choose based on your distribution and preferences.
+
+<AccordionGroup>
+  <Accordion title="AppImage (Universal)">
+    **Advantages:**
+    - Works on most Linux distributions
+    - No installation required
+    - Self-contained with all dependencies
+    - Easy to update (just replace the file)
+
+    **How to use:**
+    1. Download `.AppImage` file
+    2. Make it executable: `chmod +x SlipStream-GUI-Linux-x64.AppImage`
+    3. Run it: `./SlipStream-GUI-Linux-x64.AppImage`
+
+    **Common issues:**
+    - FUSE errors on some distributions (see below)
+    - No automatic desktop integration
+  </Accordion>
+
+  <Accordion title="DEB package (Debian/Ubuntu)">
+    **Advantages:**
+    - Native installation on Debian-based systems
+    - Automatic desktop integration (launcher, icon)
+    - System-managed updates
+
+    **How to install:**
+    ```bash
+    # Download the .deb file, then:
+    sudo dpkg -i SlipStream-GUI-Linux-x64.deb
+
+    # If dependencies are missing:
+    sudo apt-get install -f
+    ```
+
+    **Supported distributions:**
+    - Debian 10+
+    - Ubuntu 20.04+
+    - Linux Mint 20+
+    - Pop!_OS 20.04+
+    - Elementary OS 6+
+  </Accordion>
+
+  <Accordion title="Which should I choose?">
+    **Use AppImage if:**
+    - You're on a non-Debian distribution (Fedora, Arch, openSUSE, etc.)
+    - You want portability (run from USB, etc.)
+    - You don't have sudo access
+
+    **Use DEB if:**
+    - You're on Ubuntu, Debian, Mint, or derivatives
+    - You want system integration (launcher icons, automatic updates)
+    - You prefer traditional package management
+  </Accordion>
+</AccordionGroup>
+
+## Execution permissions
+
+<AccordionGroup>
+  <Accordion title="AppImage won't run">
+    The AppImage must have execute permissions:
+
+    ```bash
+    chmod +x SlipStream-GUI-Linux-x64.AppImage
+    ./SlipStream-GUI-Linux-x64.AppImage
+    ```
+
+    **FUSE errors:**
+    If you see "FUSE" or "AppImage requires FUSE" errors:
+
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install fuse libfuse2
+
+    # Fedora
+    sudo dnf install fuse fuse-libs
+
+    # Arch
+    sudo pacman -S fuse2
+    ```
+
+    **Alternative (extract and run):**
+    ```bash
+    ./SlipStream-GUI-Linux-x64.AppImage --appimage-extract
+    ./squashfs-root/AppRun
+    ```
+  </Accordion>
+
+  <Accordion title="Binary not executable">
+    The SlipStream client binary must have execute permissions:
+
+    **Check permissions:**
+    ```bash
+    ls -l /path/to/binaries/slipstream-client-linux
+    ```
+
+    **Set execute permission:**
+    ```bash
+    chmod +x /path/to/binaries/slipstream-client-linux
+    ```
+
+    <Note>The app automatically sets execute permissions on startup, but manual intervention may be needed if the binary was extracted incorrectly.</Note>
+  </Accordion>
+
+  <Accordion title="Permission denied errors">
+    If you see "Permission denied" when starting the VPN:
+
+    1. **Check binary location:**
+       ```bash
+       # AppImage
+       ls -l ~/.cache/appimage-run/*/binaries/
+
+       # DEB install
+       ls -l /opt/SlipStream\ GUI/resources/binaries/
+       ```
+
+    2. **Fix permissions recursively:**
+       ```bash
+       # AppImage
+       chmod +x ~/.cache/appimage-run/*/binaries/*
+
+       # DEB install
+       sudo chmod +x /opt/SlipStream\ GUI/resources/binaries/*
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## System proxy configuration
+
+Linux system proxy varies by desktop environment.
+
+<AccordionGroup>
+  <Accordion title="GNOME / Ubuntu Desktop">
+    SlipStream GUI uses `gsettings` to configure GNOME proxy.
+
+    **Automatic configuration:**
+    - Enable "Configure System Proxy" in the app
+    - The app will run: `gsettings set org.gnome.system.proxy mode 'manual'`
+
+    **Manual configuration:**
+    ```bash
+    # Set HTTP proxy
+    gsettings set org.gnome.system.proxy.http host '127.0.0.1'
+    gsettings set org.gnome.system.proxy.http port 8080
+
+    # Set HTTPS proxy
+    gsettings set org.gnome.system.proxy.https host '127.0.0.1'
+    gsettings set org.gnome.system.proxy.https port 8080
+
+    # Enable proxy
+    gsettings set org.gnome.system.proxy mode 'manual'
+    ```
+
+    **Disable proxy:**
+    ```bash
+    gsettings set org.gnome.system.proxy mode 'none'
+    ```
+
+    **Check current settings:**
+    ```bash
+    gsettings get org.gnome.system.proxy mode
+    gsettings get org.gnome.system.proxy.http host
+    gsettings get org.gnome.system.proxy.http port
+    ```
+  </Accordion>
+
+  <Accordion title="KDE Plasma">
+    KDE doesn't use `gsettings`. Configure manually:
+
+    **Via System Settings:**
+    1. **System Settings** → **Network** → **Settings** → **Proxy**
+    2. Select **Manually specify the proxy settings**
+    3. **HTTP Proxy**: `http://127.0.0.1:8080`
+    4. **HTTPS Proxy**: `http://127.0.0.1:8080`
+    5. Click **Apply**
+
+    **Via environment variables:**
+    Add to `~/.bashrc` or `~/.zshrc`:
+    ```bash
+    export http_proxy="http://127.0.0.1:8080"
+    export https_proxy="http://127.0.0.1:8080"
+    export HTTP_PROXY="http://127.0.0.1:8080"
+    export HTTPS_PROXY="http://127.0.0.1:8080"
+    export no_proxy="localhost,127.0.0.1,::1"
+    ```
+  </Accordion>
+
+  <Accordion title="XFCE / MATE / Cinnamon">
+    These desktop environments don't have centralized proxy management.
+
+    **Configure per-application:**
+    - **Firefox**: Settings → Network Settings → Manual proxy
+    - **Chrome/Chromium**: Launch with `--proxy-server="127.0.0.1:8080"`
+
+    **System-wide via environment variables:**
+    Add to `/etc/environment` (requires sudo):
+    ```bash
+    http_proxy="http://127.0.0.1:8080"
+    https_proxy="http://127.0.0.1:8080"
+    HTTP_PROXY="http://127.0.0.1:8080"
+    HTTPS_PROXY="http://127.0.0.1:8080"
+    no_proxy="localhost,127.0.0.1,::1"
+    ```
+
+    Then reboot or log out and back in.
+  </Accordion>
+
+  <Accordion title="Terminal applications">
+    Most terminal tools respect proxy environment variables:
+
+    **Temporary (current session):**
+    ```bash
+    export http_proxy="http://127.0.0.1:8080"
+    export https_proxy="http://127.0.0.1:8080"
+
+    # Now use curl, wget, etc.
+    curl https://httpbin.org/ip
+    ```
+
+    **Permanent (add to shell RC file):**
+    ```bash
+    echo 'export http_proxy="http://127.0.0.1:8080"' >> ~/.bashrc
+    echo 'export https_proxy="http://127.0.0.1:8080"' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Binary architecture
+
+<AccordionGroup>
+  <Accordion title="Check your system architecture">
+    ```bash
+    uname -m
+    ```
+
+    **Output meanings:**
+    - `x86_64` = 64-bit Intel/AMD (most common)
+    - `aarch64` or `arm64` = 64-bit ARM (Raspberry Pi 4, Pine64, etc.)
+    - `i686` = 32-bit x86 (not supported)
+
+    <Note>Currently, only x64 builds are available. ARM64 Linux builds are not yet provided.</Note>
+  </Accordion>
+
+  <Accordion title="Architecture mismatch errors">
+    If you see "cannot execute binary file: Exec format error":
+
+    1. **Verify binary architecture:**
+       ```bash
+       file binaries/slipstream-client-linux
+       ```
+       Should show: `ELF 64-bit LSB executable, x86-64`
+
+    2. **Check system architecture:**
+       ```bash
+       uname -m
+       ```
+       Must be `x86_64` for current builds
+
+    3. **If on ARM64:**
+       - ARM64 Linux is not currently supported
+       - Watch the [GitHub releases](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases) for future ARM builds
+  </Accordion>
+</AccordionGroup>
+
+## Distribution-specific issues
+
+<AccordionGroup>
+  <Accordion title="Ubuntu / Debian / Mint">
+    **Missing dependencies for DEB:**
+    ```bash
+    # Install dependencies
+    sudo apt-get install -f
+
+    # Or manually install common dependencies
+    sudo apt-get install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libuuid1 libsecret-1-0
+    ```
+
+    **AppImage FUSE issues:**
+    ```bash
+    sudo apt-get install fuse libfuse2
+    ```
+  </Accordion>
+
+  <Accordion title="Fedora / RHEL / CentOS">
+    **Missing dependencies:**
+    ```bash
+    # For AppImage
+    sudo dnf install fuse fuse-libs
+
+    # Common Electron dependencies
+    sudo dnf install gtk3 nss libXScrnSaver libnotify
+    ```
+
+    **Convert DEB to RPM (if needed):**
+    ```bash
+    sudo dnf install alien
+    sudo alien -r SlipStream-GUI-Linux-x64.deb
+    sudo rpm -i slipstream-gui-*.rpm
+    ```
+  </Accordion>
+
+  <Accordion title="Arch / Manjaro">
+    **Missing dependencies:**
+    ```bash
+    # For AppImage
+    sudo pacman -S fuse2
+
+    # Electron dependencies (usually already installed)
+    sudo pacman -S gtk3 nss libxss
+    ```
+
+    **Build from AUR (if available):**
+    Check [AUR](https://aur.archlinux.org/) for community packages.
+  </Accordion>
+
+  <Accordion title="openSUSE">
+    **Missing dependencies:**
+    ```bash
+    # For AppImage
+    sudo zypper install fuse libfuse2
+
+    # Electron dependencies
+    sudo zypper install libgtk-3-0 mozilla-nss libXScrnSaver1
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## SELinux / AppArmor considerations
+
+<AccordionGroup>
+  <Accordion title="SELinux (Fedora, RHEL, CentOS)">
+    SELinux may block network operations.
+
+    **Check if SELinux is enforcing:**
+    ```bash
+    getenforce
+    ```
+
+    **View SELinux denials:**
+    ```bash
+    sudo ausearch -m avc -ts recent
+    ```
+
+    **Temporarily set to permissive (testing only):**
+    ```bash
+    sudo setenforce 0
+    ```
+    Test if SlipStream works. If it does, SELinux is the issue.
+
+    **Re-enable SELinux:**
+    ```bash
+    sudo setenforce 1
+    ```
+
+    **Create SELinux policy (permanent fix):**
+    ```bash
+    # Generate policy from denials
+    sudo ausearch -m avc -ts recent | audit2allow -M slipstream
+    # Apply policy
+    sudo semodule -i slipstream.pp
+    ```
+  </Accordion>
+
+  <Accordion title="AppArmor (Ubuntu, Debian)">
+    AppArmor rarely blocks Electron apps, but check if issues occur:
+
+    **Check AppArmor status:**
+    ```bash
+    sudo aa-status
+    ```
+
+    **View AppArmor denials:**
+    ```bash
+    sudo dmesg | grep -i apparmor
+    ```
+
+    **Temporarily disable (testing only):**
+    ```bash
+    sudo systemctl stop apparmor
+    ```
+
+    **Re-enable:**
+    ```bash
+    sudo systemctl start apparmor
+    ```
+  </Accordion>
+
+  <Accordion title="Firewall (iptables / firewalld)">
+    Linux firewalls may block ports.
+
+    **Check iptables:**
+    ```bash
+    sudo iptables -L -n
+    ```
+
+    **Allow ports (iptables):**
+    ```bash
+    sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+    sudo iptables -A INPUT -p tcp --dport 5201 -j ACCEPT
+    ```
+
+    **Check firewalld (Fedora/CentOS):**
+    ```bash
+    sudo firewall-cmd --list-all
+    ```
+
+    **Allow ports (firewalld):**
+    ```bash
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --permanent --add-port=5201/tcp
+    sudo firewall-cmd --reload
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Linux-specific logs
+
+<AccordionGroup>
+  <Accordion title="Application logs location">
+    **AppImage:**
+    - Settings: `~/.config/SlipStream GUI/settings.json`
+    - Logs: Check app's Logs panel or run from terminal
+
+    **DEB install:**
+    - Settings: `~/.config/SlipStream GUI/settings.json`
+    - Binaries: `/opt/SlipStream GUI/resources/binaries/`
+  </Accordion>
+
+  <Accordion title="Run from terminal for debug output">
+    **AppImage:**
+    ```bash
+    ./SlipStream-GUI-Linux-x64.AppImage
+    ```
+
+    **DEB install:**
+    ```bash
+    /opt/SlipStream\ GUI/slipstream-gui
+    ```
+
+    All output (errors, warnings, logs) will appear in the terminal.
+  </Accordion>
+
+  <Accordion title="Check port usage">
+    ```bash
+    # Check what's using port 8080
+    sudo lsof -i :8080
+
+    # Check what's using port 5201
+    sudo lsof -i :5201
+
+    # Kill process by port
+    sudo lsof -ti:8080 | xargs kill -9
+    sudo lsof -ti:5201 | xargs kill -9
+    ```
+  </Accordion>
+
+  <Accordion title="System logs">
+    **journalctl (systemd distributions):**
+    ```bash
+    # View recent logs
+    journalctl -xe
+
+    # Filter for errors
+    journalctl -p err -xe
+    ```
+
+    **dmesg (kernel messages):**
+    ```bash
+    dmesg | tail -50
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Sharing VPN over network
+
+<AccordionGroup>
+  <Accordion title="Find your Linux machine's IP">
+    ```bash
+    # Show all network interfaces
+    ip addr show
+
+    # Or simpler
+    hostname -I
+    ```
+
+    Look for your local IP (usually `192.168.x.x` or `10.0.x.x`).
+  </Accordion>
+
+  <Accordion title="Configure mobile device">
+    **Android:**
+    1. **Settings** → **Wi-Fi** → Long-press network → **Modify**
+    2. **Advanced** → **Proxy** → **Manual**
+    3. **Hostname**: Your Linux IP (e.g., `192.168.1.100`)
+    4. **Port**: `8080`
+
+    **iOS:**
+    1. **Settings** → **Wi-Fi** → Tap **(i)** next to network
+    2. **HTTP Proxy** → **Manual**
+    3. **Server**: Your Linux IP
+    4. **Port**: `8080`
+  </Accordion>
+
+  <Accordion title="Firewall configuration for sharing">
+    **iptables:**
+    ```bash
+    sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+    sudo iptables -A INPUT -p tcp -s 192.168.0.0/16 --dport 8080 -j ACCEPT
+    ```
+
+    **firewalld:**
+    ```bash
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --reload
+    ```
+
+    **ufw (Ubuntu):**
+    ```bash
+    sudo ufw allow 8080/tcp
+    sudo ufw reload
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+For issues not covered here, see [Common issues](/troubleshooting/common-issues) or open an issue on [GitHub](https://github.com/mirzaaghazadeh/SlipStreamGUI/issues).
+</Note>

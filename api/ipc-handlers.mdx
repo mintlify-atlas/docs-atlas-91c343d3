@@ -1,0 +1,586 @@
+---
+title: "IPC Handlers"
+description: "Inter-process communication handlers between renderer and main process"
+---
+
+## Overview
+
+SlipStream GUI uses Electron's IPC (Inter-Process Communication) system to communicate between the renderer process (UI) and main process (Node.js backend). All handlers are registered using `ipcMain.handle()` and invoked from the renderer using `ipcRenderer.invoke()`.
+
+## Service Control
+
+### start-service
+
+Starts the VPN service with specified settings.
+
+<ParamField path="settings" type="object">
+  Configuration object for starting the VPN.
+  
+  <ParamField path="settings.resolver" type="string">
+    DNS resolver address (e.g., `8.8.8.8:53`)
+  </ParamField>
+  
+  <ParamField path="settings.domain" type="string">
+    Tunnel domain (e.g., `s.example.com`)
+  </ParamField>
+  
+  <ParamField path="settings.tunMode" type="boolean">
+    Enable TUN mode (default: `false`)
+  </ParamField>
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the service started successfully
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message describing the result
+</ResponseField>
+
+<ResponseField name="details" type="object">
+  Detailed status information about running services
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('start-service', {
+  resolver: '8.8.8.8:53',
+  domain: 's.example.com',
+  tunMode: false
+});
+
+if (result.success) {
+  console.log('VPN started:', result.message);
+}
+```
+
+### stop-service
+
+Stops the VPN service and disables system proxy if it was enabled by the app.
+
+<ResponseField name="success" type="boolean">
+  Whether the service stopped successfully
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message
+</ResponseField>
+
+<ResponseField name="details" type="object">
+  Updated status details after stopping
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('stop-service');
+console.log(result.message);
+```
+
+### get-status
+
+Returns the current VPN connection status.
+
+<ResponseField name="isRunning" type="boolean">
+  Whether the VPN is currently active
+</ResponseField>
+
+<ResponseField name="details" type="object">
+  Detailed status information including client, proxy, and system proxy states
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const status = await ipcRenderer.invoke('get-status');
+if (status.isRunning) {
+  console.log('VPN is active');
+}
+```
+
+## Settings Management
+
+### get-settings
+
+Retrieves current application settings.
+
+<ResponseField name="resolver" type="string">
+  Current DNS resolver
+</ResponseField>
+
+<ResponseField name="domain" type="string">
+  Current tunnel domain
+</ResponseField>
+
+<ResponseField name="mode" type="string">
+  Connection mode (`proxy` or `tun`)
+</ResponseField>
+
+<ResponseField name="verbose" type="boolean">
+  Verbose logging enabled
+</ResponseField>
+
+<ResponseField name="socks5AuthEnabled" type="boolean">
+  SOCKS5 authentication enabled
+</ResponseField>
+
+<ResponseField name="socks5AuthUsername" type="string">
+  SOCKS5 username
+</ResponseField>
+
+<ResponseField name="socks5AuthPassword" type="string">
+  SOCKS5 password
+</ResponseField>
+
+<ResponseField name="workspaces" type="array">
+  List of workspace configurations
+</ResponseField>
+
+<ResponseField name="activeWorkspaceId" type="string | null">
+  Currently active workspace ID
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const settings = await ipcRenderer.invoke('get-settings');
+console.log('Current resolver:', settings.resolver);
+console.log('Verbose mode:', settings.verbose);
+```
+
+### set-resolver
+
+Updates the DNS resolver setting.
+
+<ParamField path="payload" type="object">
+  <ParamField path="payload.resolver" type="string" required>
+    DNS resolver in `IP:port` format (e.g., `1.1.1.1:53`)
+  </ParamField>
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the resolver was updated successfully
+</ResponseField>
+
+<ResponseField name="resolver" type="string">
+  The normalized resolver value (port forced to 53)
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if validation failed
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('set-resolver', {
+  resolver: '1.1.1.1:53'
+});
+
+if (result.success) {
+  console.log('Resolver updated to:', result.resolver);
+}
+```
+
+### set-verbose
+
+Toggles verbose logging mode.
+
+<ParamField path="verbose" type="boolean" required>
+  Enable or disable verbose logging
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Always `true`
+</ResponseField>
+
+<ResponseField name="verbose" type="boolean">
+  Current verbose mode state
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('set-verbose', true);
+console.log('Verbose logging:', result.verbose);
+```
+
+### set-socks5-auth
+
+Configures SOCKS5 authentication settings.
+
+<ParamField path="auth" type="object">
+  <ParamField path="auth.enabled" type="boolean">
+    Enable SOCKS5 authentication
+  </ParamField>
+  
+  <ParamField path="auth.username" type="string">
+    SOCKS5 username
+  </ParamField>
+  
+  <ParamField path="auth.password" type="string">
+    SOCKS5 password
+  </ParamField>
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Always `true`
+</ResponseField>
+
+<ResponseField name="socks5AuthEnabled" type="boolean">
+  Updated authentication state
+</ResponseField>
+
+<ResponseField name="socks5AuthUsername" type="string">
+  Updated username
+</ResponseField>
+
+<ResponseField name="socks5AuthPassword" type="string">
+  Updated password
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('set-socks5-auth', {
+  enabled: true,
+  username: 'myuser',
+  password: 'mypass'
+});
+```
+
+## Proxy Management
+
+### toggle-system-proxy
+
+Enables or disables the system proxy configuration.
+
+<ParamField path="enable" type="boolean" required>
+  `true` to enable system proxy, `false` to disable
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the operation succeeded
+</ResponseField>
+
+<ResponseField name="configured" type="boolean">
+  Current system proxy state
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('toggle-system-proxy', true);
+if (result.success) {
+  console.log('System proxy enabled');
+}
+```
+
+### check-system-proxy
+
+Checks the current system proxy configuration status.
+
+<ResponseField name="configured" type="boolean">
+  Whether system proxy is currently configured
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const proxyStatus = await ipcRenderer.invoke('check-system-proxy');
+if (proxyStatus.configured) {
+  console.log('System proxy is active');
+}
+```
+
+### set-proxy-bypass-list
+
+Configures domains/IPs that should bypass the proxy.
+
+<ParamField path="list" type="array" required>
+  Array of domain patterns or IP addresses (e.g., `["localhost", "*.local", "192.168.*"]`)
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the list was updated
+</ResponseField>
+
+<ResponseField name="proxyBypassList" type="array">
+  Sanitized bypass list (deduplicated and trimmed)
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('set-proxy-bypass-list', [
+  'localhost',
+  '127.0.0.1',
+  '*.local'
+]);
+```
+
+### get-proxy-bypass-list
+
+Retrieves the current proxy bypass list.
+
+<ResponseField name="success" type="boolean">
+  Always `true`
+</ResponseField>
+
+<ResponseField name="proxyBypassList" type="array">
+  Current bypass list
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('get-proxy-bypass-list');
+console.log('Bypass list:', result.proxyBypassList);
+```
+
+## Testing
+
+### test-proxy
+
+Tests the proxy connection by making a request to httpbin.org.
+
+<ResponseField name="success" type="boolean">
+  Whether the test succeeded
+</ResponseField>
+
+<ResponseField name="ip" type="string">
+  External IP address returned by httpbin (if successful)
+</ResponseField>
+
+<ResponseField name="responseTime" type="number">
+  Response time in milliseconds
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if test failed
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('test-proxy');
+if (result.success) {
+  console.log(`Connection OK! IP: ${result.ip}, Time: ${result.responseTime}ms`);
+} else {
+  console.error('Test failed:', result.error);
+}
+```
+
+### dns-check-single
+
+Tests a single DNS server for reachability and DNS resolution.
+
+<ParamField path="payload" type="object">
+  <ParamField path="payload.server" type="string" required>
+    DNS server IP or IP:port (e.g., `8.8.8.8` or `8.8.8.8:53`)
+  </ParamField>
+  
+  <ParamField path="payload.domain" type="string" required>
+    Test domain to resolve (e.g., `google.com`)
+  </ParamField>
+  
+  <ParamField path="payload.pingTimeoutMs" type="number">
+    Ping timeout in milliseconds (default: 2000)
+  </ParamField>
+  
+  <ParamField path="payload.dnsTimeoutMs" type="number">
+    DNS resolution timeout in milliseconds (default: 2500)
+  </ParamField>
+</ParamField>
+
+<ResponseField name="ok" type="boolean">
+  Whether the check completed (not necessarily successful)
+</ResponseField>
+
+<ResponseField name="server" type="string">
+  Server address used for Node.js DNS resolution
+</ResponseField>
+
+<ResponseField name="ip" type="string">
+  Server IP address
+</ResponseField>
+
+<ResponseField name="port" type="number">
+  Server port
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status: `OK`, `Ping Only`, or `Unreachable`
+</ResponseField>
+
+<ResponseField name="ping" type="object">
+  Ping test results with `ok` and `time` fields
+</ResponseField>
+
+<ResponseField name="dns" type="object">
+  DNS resolution results with `ok`, `time`, and optional `error` fields
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('dns-check-single', {
+  server: '8.8.8.8',
+  domain: 'google.com',
+  pingTimeoutMs: 2000,
+  dnsTimeoutMs: 2500
+});
+
+if (result.ok && result.status === 'OK') {
+  console.log(`DNS server ${result.ip} is working!`);
+}
+```
+
+## Workspaces
+
+### get-workspaces
+
+Retrieves all workspace configurations.
+
+<ResponseField name="success" type="boolean">
+  Always `true`
+</ResponseField>
+
+<ResponseField name="workspaces" type="array">
+  Array of workspace objects
+</ResponseField>
+
+<ResponseField name="activeWorkspaceId" type="string | null">
+  Currently active workspace ID
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('get-workspaces');
+console.log('Workspaces:', result.workspaces);
+```
+
+### save-workspaces
+
+Saves workspace configurations and sets the active workspace.
+
+<ParamField path="payload" type="object">
+  <ParamField path="payload.workspaces" type="array" required>
+    Array of workspace objects with `id`, `name`, `resolver`, `domain`, and `proxyBypassList` fields
+  </ParamField>
+  
+  <ParamField path="payload.activeWorkspaceId" type="string">
+    ID of the workspace to set as active
+  </ParamField>
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the save succeeded
+</ResponseField>
+
+<ResponseField name="workspaces" type="array">
+  Sanitized workspace array
+</ResponseField>
+
+<ResponseField name="activeWorkspaceId" type="string | null">
+  Active workspace ID after save
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if save failed
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+await ipcRenderer.invoke('save-workspaces', {
+  workspaces: [
+    {
+      id: 'home-123',
+      name: 'Home',
+      resolver: '8.8.8.8:53',
+      domain: 's.home.com',
+      proxyBypassList: []
+    }
+  ],
+  activeWorkspaceId: 'home-123'
+});
+```
+
+## Utility
+
+### get-version
+
+Returns the application version from package.json.
+
+<ResponseField type="string">
+  Version string (e.g., `1.0.5`)
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const version = await ipcRenderer.invoke('get-version');
+console.log('App version:', version);
+```
+
+### check-update
+
+Checks GitHub for available updates.
+
+<ResponseField name="success" type="boolean">
+  Whether the check succeeded
+</ResponseField>
+
+<ResponseField name="hasUpdate" type="boolean">
+  Whether a newer version is available
+</ResponseField>
+
+<ResponseField name="currentVersion" type="string">
+  Current application version
+</ResponseField>
+
+<ResponseField name="latestVersion" type="string">
+  Latest version available on GitHub
+</ResponseField>
+
+<ResponseField name="releaseUrl" type="string">
+  URL to the GitHub release page
+</ResponseField>
+
+<ResponseField name="releaseNotes" type="string">
+  Release notes from GitHub
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+const result = await ipcRenderer.invoke('check-update');
+if (result.success && result.hasUpdate) {
+  console.log(`Update available: ${result.latestVersion}`);
+}
+```
+
+### open-external
+
+Opens a URL in the system default browser.
+
+<ParamField path="url" type="string" required>
+  URL to open
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether the URL was opened successfully
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if opening failed
+</ResponseField>
+
+**Usage Example:**
+
+```javascript index.html
+await ipcRenderer.invoke('open-external', 'https://github.com/mirzaaghazadeh/SlipStreamGUI');
+```

@@ -1,0 +1,404 @@
+---
+title: System proxy configuration
+description: Configure system-wide proxy settings for seamless VPN integration
+---
+
+## What is system proxy
+
+System proxy configuration tells your operating system to route all network traffic through SlipStream's HTTP proxy server. This enables system-wide VPN functionality without requiring individual application configuration.
+
+<Info>
+When system proxy is enabled, most applications on your computer will automatically use the VPN connection without additional setup.
+</Info>
+
+### How it works
+
+SlipStream GUI creates a multi-layer proxy architecture:
+
+```
+Your Applications
+    ↓ HTTP/HTTPS
+HTTP Proxy Server (127.0.0.1:8080)
+    ↓ SOCKS5 Protocol
+SOCKS5 Client (127.0.0.1:5201)
+    ↓ Encrypted Tunnel
+SlipStream VPN Server
+```
+
+The system proxy configuration points your OS to the HTTP Proxy Server, which then routes traffic through the encrypted VPN tunnel.
+
+## Auto-configuration feature
+
+SlipStream GUI can automatically configure your system proxy settings when you start the VPN.
+
+### Enabling auto-configuration
+
+<Steps>
+  <Step title="Locate the toggle">
+    In the settings section, find the **"System Proxy"** toggle switch.
+  </Step>
+
+  <Step title="Enable the toggle">
+    Click the toggle to enable automatic system proxy configuration.
+    
+    The setting is saved immediately to `settings.json`.
+  </Step>
+
+  <Step title="Start the VPN">
+    When you start the VPN with this toggle enabled, SlipStream GUI will automatically:
+    - Configure your OS proxy settings
+    - Set HTTP proxy to `127.0.0.1:8080`
+    - Set HTTPS proxy to `127.0.0.1:8080`
+    - Apply bypass list if configured
+  </Step>
+
+  <Step title="Verify configuration">
+    The status panel will show "System Proxy: Configured" when successful.
+  </Step>
+</Steps>
+
+<Note>
+The app only modifies system proxy settings that it configured itself, ensuring it doesn't interfere with other proxy configurations.
+</Note>
+
+### Automatic cleanup
+
+When you stop the VPN, SlipStream GUI will:
+
+- Restore your previous proxy settings
+- Only unconfigure proxies that match its own configuration (`127.0.0.1:8080`)
+- Leave other proxy configurations untouched
+
+<Info>
+The app tracks which proxies it configured in `settings.json` to ensure safe cleanup even after crashes or unexpected shutdowns.
+</Info>
+
+## Manual configuration
+
+If you prefer manual control or encounter issues with auto-configuration, you can manually set up the system proxy.
+
+### macOS manual setup
+
+<Steps>
+  <Step title="Open System Settings">
+    Go to **System Settings** → **Network**
+  </Step>
+
+  <Step title="Select your network">
+    Click your active network connection (Wi-Fi or Ethernet)
+  </Step>
+
+  <Step title="Open Proxies settings">
+    Click **Details...** → **Proxies** tab
+  </Step>
+
+  <Step title="Configure HTTP and HTTPS proxies">
+    - Check **Web Proxy (HTTP)**
+    - Server: `127.0.0.1`
+    - Port: `8080`
+    - Check **Secure Web Proxy (HTTPS)**
+    - Server: `127.0.0.1`
+    - Port: `8080`
+  </Step>
+
+  <Step title="Set bypass list (optional)">
+    In the **Bypass proxy settings for these Hosts & Domains** field, add domains from your bypass list.
+  </Step>
+
+  <Step title="Apply settings">
+    Click **OK** to save
+  </Step>
+</Steps>
+
+### Windows manual setup
+
+<Steps>
+  <Step title="Open Proxy Settings">
+    Go to **Settings** → **Network & Internet** → **Proxy**
+  </Step>
+
+  <Step title="Enable manual proxy">
+    Under **Manual proxy setup**, toggle on **Use a proxy server**
+  </Step>
+
+  <Step title="Enter proxy details">
+    - Address: `127.0.0.1`
+    - Port: `8080`
+  </Step>
+
+  <Step title="Set bypass list (optional)">
+    In the **Use the proxy server except for addresses that start with...** field, enter:
+    ```
+    <local>
+    ```
+    Add additional bypass entries separated by semicolons if needed.
+  </Step>
+
+  <Step title="Save settings">
+    Click **Save**
+  </Step>
+</Steps>
+
+<Warning>
+On Windows, run SlipStream GUI as Administrator for best results with automatic proxy configuration.
+</Warning>
+
+### Linux manual setup (GNOME)
+
+<Steps>
+  <Step title="Open Network Settings">
+    Go to **Settings** → **Network** → **Network Proxy**
+  </Step>
+
+  <Step title="Select Manual mode">
+    Choose **Manual** from the method dropdown
+  </Step>
+
+  <Step title="Configure HTTP and HTTPS">
+    - HTTP Proxy: `127.0.0.1` Port: `8080`
+    - HTTPS Proxy: `127.0.0.1` Port: `8080`
+  </Step>
+
+  <Step title="Set bypass list (optional)">
+    In the **Ignore Hosts** field, add domains that should bypass the proxy
+  </Step>
+
+  <Step title="Apply settings">
+    Close the settings window (changes are saved automatically)
+  </Step>
+</Steps>
+
+## Proxy ports
+
+SlipStream GUI uses two local ports for proxy functionality:
+
+### Port 8080 - HTTP Proxy
+
+<Info>
+**Primary proxy port** - This is what you'll configure in your system settings.
+</Info>
+
+- **Address**: `127.0.0.1:8080` (localhost only) or `0.0.0.0:8080` (network accessible)
+- **Protocol**: HTTP/HTTPS proxy
+- **Purpose**: Accepts HTTP and HTTPS requests from applications and forwards them through the VPN
+- **Network sharing**: Listens on `0.0.0.0` to allow mobile devices on the same network to connect
+
+### Port 5201 - SOCKS5
+
+- **Address**: `127.0.0.1:5201`
+- **Protocol**: SOCKS5 proxy
+- **Purpose**: Created by the SlipStream client binary; the HTTP proxy on port 8080 forwards traffic here
+- **Note**: Not typically used directly by applications
+
+<Warning>
+Ensure ports 8080 and 5201 are not in use by other applications. If you see "Address already in use" errors, close conflicting applications or change the port configuration.
+</Warning>
+
+## Bypass list for split tunneling
+
+The proxy bypass list allows you to exclude specific domains or IP addresses from going through the VPN. This is useful for:
+
+- Accessing local network resources
+- Excluding specific services from the VPN
+- Improving performance for local traffic
+- Split tunneling scenarios
+
+### Configuring the bypass list
+
+<Steps>
+  <Step title="Find the Proxy Bypass List setting">
+    In the Configuration section, locate the **"Proxy Bypass List"** text area.
+  </Step>
+
+  <Step title="Enter bypass entries">
+    Add domains or addresses, one per line. Examples:
+    ```
+    *.google.com
+    192.168.1.0/24
+    localhost
+    127.0.0.1
+    *.internal.company.com
+    local-server
+    ```
+  </Step>
+
+  <Step title="Save the list">
+    Click outside the text area or press Ctrl/Cmd+Enter to save.
+  </Step>
+
+  <Step title="Apply changes">
+    If the VPN is running, stop and restart it to apply the new bypass list.
+  </Step>
+</Steps>
+
+### Bypass list syntax
+
+**Wildcards**:
+```
+*.google.com          # Matches all Google subdomains
+*.internal.*          # Matches any domain with 'internal' in it
+```
+
+**IP ranges (CIDR notation)**:
+```
+192.168.1.0/24        # Entire local subnet
+10.0.0.0/8            # Private network range
+```
+
+**Exact matches**:
+```
+localhost             # Localhost only
+127.0.0.1             # Loopback IP
+my-server.local       # Specific hostname
+```
+
+**Windows-specific**:
+```
+<local>               # All local addresses (Windows)
+```
+
+<Note>
+The bypass list is stored in `settings.json` and persists between sessions. It's also included when you save workspace presets.
+</Note>
+
+## Platform-specific notes
+
+### macOS
+
+<Tabs>
+  <Tab title="Permissions">
+    - System proxy configuration requires administrator privileges
+    - macOS will prompt for your password when enabling system proxy
+    - The app uses `networksetup` command-line tool
+  </Tab>
+  
+  <Tab title="Network services">
+    SlipStream GUI automatically detects and configures these network services in order of preference:
+    1. Wi-Fi
+    2. Ethernet
+    3. USB LAN
+    4. Thunderbolt Bridge
+    5. First available service as fallback
+  </Tab>
+  
+  <Tab title="Troubleshooting">
+    If auto-configuration fails:
+    - Ensure you're not behind a corporate proxy
+    - Check that `networksetup` commands aren't blocked
+    - Try manual configuration instead
+  </Tab>
+</Tabs>
+
+### Windows
+
+<Tabs>
+  <Tab title="Administrator privileges">
+    <Warning>
+    For best results, **run SlipStream GUI as Administrator** on Windows.
+    </Warning>
+    
+    This ensures:
+    - WinHTTP proxy can be configured
+    - WinINET (user proxy) can be set
+    - Registry changes are allowed
+  </Tab>
+  
+  <Tab title="Dual proxy configuration">
+    SlipStream GUI configures **both**:
+    - **WinINET**: User proxy (HKCU registry, used by browsers and most apps)
+    - **WinHTTP**: System proxy (used by services and some system apps)
+    
+    This ensures maximum compatibility.
+  </Tab>
+  
+  <Tab title="Previous settings restoration">
+    The app captures your previous proxy settings before making changes:
+    - `ProxyEnable` state
+    - `ProxyServer` value
+    - `ProxyOverride` (bypass list)
+    
+    These are restored when you disable the proxy or stop the VPN.
+  </Tab>
+</Tabs>
+
+### Linux
+
+<Tabs>
+  <Tab title="GNOME (gsettings)">
+    Auto-configuration works with:
+    - GNOME Desktop Environment
+    - Uses `gsettings` for configuration
+    - Sets both HTTP and HTTPS proxies
+    - Applies ignore-hosts for bypass list
+  </Tab>
+  
+  <Tab title="Other desktop environments">
+    For non-GNOME environments:
+    - Manual configuration required
+    - Set environment variables if needed:
+      ```bash
+      export HTTP_PROXY="http://127.0.0.1:8080"
+      export HTTPS_PROXY="http://127.0.0.1:8080"
+      export NO_PROXY="localhost,127.0.0.1"
+      ```
+  </Tab>
+  
+  <Tab title="Application-specific">
+    Some Linux apps ignore system proxy settings:
+    - Configure them individually to use `127.0.0.1:8080`
+    - Or set HTTP_PROXY environment variable when launching them
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+### System proxy configuration fails
+
+**macOS**:
+- Enter your administrator password when prompted
+- Check that you're not on a managed network
+- Verify network service name is correct
+
+**Windows**:
+- Run as Administrator
+- Check that registry access isn't blocked
+- Disable antivirus temporarily if it blocks registry changes
+
+**Linux**:
+- Ensure `gsettings` is available (GNOME)
+- For other DEs, use manual configuration
+- Check dconf permissions
+
+### Applications not using the proxy
+
+<Note>
+Some applications bypass system proxy settings and need manual configuration.
+</Note>
+
+Applications that may bypass system proxy:
+- Some command-line tools
+- Certain browsers in private/incognito mode
+- Applications with their own proxy settings
+- Native apps that use direct connections
+
+**Solution**: Configure these applications individually to use `127.0.0.1:8080` as their HTTP/HTTPS proxy.
+
+### Proxy remains configured after stopping VPN
+
+This shouldn't happen, but if it does:
+
+1. Check if another proxy application is running
+2. Manually disable the proxy in system settings
+3. Look for the proxy settings:
+   - **macOS**: System Settings → Network → Proxies
+   - **Windows**: Settings → Network & Internet → Proxy
+   - **Linux**: Settings → Network → Network Proxy
+
+### Performance issues
+
+If you experience slow connections:
+
+1. Add local resources to the bypass list
+2. Ensure DNS resolver is fast (use DNS Checker)
+3. Check that your SlipStream server isn't overloaded
+4. Disable verbose logging if enabled

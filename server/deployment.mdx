@@ -1,0 +1,375 @@
+---
+title: 'Server deployment'
+description: 'Deploy your own SlipStream server using slipstream-rust-deploy'
+---
+
+## Overview
+
+This guide walks you through deploying your own SlipStream server using the **slipstream-rust-deploy** automation script. The entire process takes approximately 10-15 minutes and requires minimal technical knowledge.
+
+<Info>
+The deployment script handles all technical details automatically, including binary installation, systemd service configuration, and TLS certificate setup.
+</Info>
+
+## Prerequisites
+
+Before starting the deployment, ensure you have:
+
+### 1. A Linux Server
+
+You'll need a Linux server (VPS or dedicated) running one of these distributions:
+
+- **Fedora** (latest stable version)
+- **Rocky Linux** (8.x or newer)
+- **CentOS** (7.x or 8.x)
+- **Debian** (10, 11, or 12)
+- **Ubuntu** (20.04 LTS, 22.04 LTS, or newer)
+
+<Note>
+A VPS with 1GB RAM and 1 CPU core is sufficient for personal use (5-10 concurrent connections). For shared use or higher traffic, consider 2GB RAM and 2 CPU cores.
+</Note>
+
+### 2. Server Access
+
+You need:
+- SSH access to the server
+- Root privileges or sudo access
+- Basic familiarity with terminal commands
+
+### 3. A Domain Name
+
+Purchase a domain name from any registrar (Namecheap, GoDaddy, Cloudflare, etc.) and have access to its DNS settings.
+
+<Warning>
+Do not use Cloudflare proxy (orange cloud) with SlipStream. The DNS records must be DNS-only (gray cloud) for the server to work correctly.
+</Warning>
+
+### 4. Domain Setup Prerequisites
+
+Before running the installation script:
+
+1. **Point your domain to your server**: Create an A record pointing your domain (or subdomain) to your server's IP address
+2. **Wait for DNS propagation**: This can take 5 minutes to 24 hours (usually under 1 hour)
+3. **Verify DNS propagation**: Use `dig` or `nslookup` to confirm the domain resolves to your server IP
+
+```bash
+# Verify DNS resolution
+dig +short s.example.com
+# Should return your server's IP address
+```
+
+<Info>
+For detailed DNS configuration instructions, see the [DNS setup](/server/dns-setup) guide.
+</Info>
+
+## Installation
+
+### One-Command Installation
+
+The slipstream-rust-deploy project provides a fully automated installation script:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/AliRezaBeigy/slipstream-rust-deploy/master/slipstream-rust-deploy.sh)
+```
+
+This single command will:
+
+1. ✅ Detect your Linux distribution and version
+2. ✅ Install required system dependencies
+3. ✅ Download the latest SlipStream server binary for your platform
+4. ✅ Create and configure the systemd service
+5. ✅ Generate TLS certificates (if needed)
+6. ✅ Start the SlipStream server automatically
+7. ✅ Enable the service to start on boot
+
+### Installation Process
+
+When you run the script, you'll be prompted for:
+
+1. **Domain name**: Enter your full domain (e.g., `s.example.com`)
+2. **Deployment mode**: Choose between SOCKS proxy or SSH tunneling
+3. **Port configuration**: Accept defaults or customize (usually defaults are fine)
+4. **TLS certificate**: Choose automatic generation or provide your own
+
+<Note>
+For most users, accepting the default options is recommended. The script uses sensible defaults optimized for typical use cases.
+</Note>
+
+### What Happens During Installation
+
+The script performs these steps automatically:
+
+```bash
+# 1. System preparation
+- Updates package lists
+- Installs curl, wget, and other utilities
+- Configures firewall rules
+
+# 2. Binary installation
+- Detects CPU architecture (x86_64, ARM, etc.)
+- Downloads prebuilt binary for your platform
+- Installs to /usr/local/bin/slipstream-server
+- Sets appropriate permissions
+
+# 3. Service configuration
+- Creates systemd service file
+- Configures automatic startup
+- Sets up logging
+
+# 4. TLS setup
+- Generates or installs TLS certificates
+- Configures certificate paths
+- Sets up automatic renewal (if using Let's Encrypt)
+
+# 5. Service startup
+- Starts the slipstream-server service
+- Verifies service status
+- Displays connection information
+```
+
+## Post-Deployment Steps
+
+After the installation completes:
+
+### 1. Verify Service Status
+
+Check that the SlipStream server is running:
+
+```bash
+sudo systemctl status slipstream-server
+```
+
+You should see output indicating the service is "active (running)".
+
+### 2. Check Server Logs
+
+View the server logs to ensure everything is working correctly:
+
+```bash
+sudo journalctl -u slipstream-server -f
+```
+
+Press `Ctrl+C` to exit log viewing.
+
+### 3. Verify Port Accessibility
+
+Ensure the required ports are open and accessible:
+
+```bash
+# Check if the port is listening
+sudo netstat -tlnp | grep slipstream
+```
+
+### 4. Test DNS Resolution
+
+Verify your domain resolves correctly:
+
+```bash
+dig +short s.example.com
+nslookup s.example.com
+```
+
+### 5. Configure Your Client
+
+Now you're ready to configure SlipStream GUI:
+
+1. Open SlipStream GUI on your device
+2. Enter your server domain (e.g., `s.example.com`)
+3. Enter your DNS resolver (your server IP with port 53, e.g., `YOUR_SERVER_IP:53`)
+4. Click "Start VPN"
+5. Test the connection using the "Test Proxy Connection" button
+
+<Info>
+If you're unsure about which DNS resolver to use, try the SlipStream GUI's built-in DNS Checker tool to find the most reliable option.
+</Info>
+
+## Systemd Service Management
+
+The SlipStream server runs as a systemd service, allowing easy management:
+
+### Start the Service
+
+```bash
+sudo systemctl start slipstream-server
+```
+
+### Stop the Service
+
+```bash
+sudo systemctl stop slipstream-server
+```
+
+### Restart the Service
+
+```bash
+sudo systemctl restart slipstream-server
+```
+
+### Check Service Status
+
+```bash
+sudo systemctl status slipstream-server
+```
+
+### Enable Auto-Start on Boot
+
+```bash
+sudo systemctl enable slipstream-server
+```
+
+### Disable Auto-Start on Boot
+
+```bash
+sudo systemctl disable slipstream-server
+```
+
+### View Real-Time Logs
+
+```bash
+# Follow logs in real-time
+sudo journalctl -u slipstream-server -f
+
+# View last 100 lines
+sudo journalctl -u slipstream-server -n 100
+
+# View logs from today
+sudo journalctl -u slipstream-server --since today
+```
+
+<Note>
+The service is automatically configured to restart on failure, ensuring high availability.
+</Note>
+
+## TLS Certificates
+
+The deployment script can handle TLS certificates automatically:
+
+### Automatic Certificate Generation
+
+By default, the script uses Let's Encrypt to generate free TLS certificates:
+
+- Certificates are automatically generated during installation
+- Stored in `/etc/letsencrypt/live/YOUR_DOMAIN/`
+- Automatically renewed before expiration
+- Renewal checks run daily via systemd timer or cron
+
+### Manual Certificate Installation
+
+If you prefer to use your own certificates:
+
+1. Choose "manual" when prompted during installation
+2. Provide paths to your certificate files:
+   - Certificate file (`.crt` or `.pem`)
+   - Private key file (`.key`)
+   - Certificate chain file (if applicable)
+
+### Certificate Renewal
+
+For Let's Encrypt certificates:
+
+```bash
+# Manually trigger certificate renewal
+sudo certbot renew
+
+# Restart service after renewal
+sudo systemctl restart slipstream-server
+```
+
+### Certificate Troubleshooting
+
+If certificate generation fails:
+
+1. Verify your domain points to the server IP
+2. Ensure ports 80 and 443 are accessible
+3. Check firewall rules aren't blocking Let's Encrypt validation
+4. Review Let's Encrypt logs: `sudo cat /var/log/letsencrypt/letsencrypt.log`
+
+<Warning>
+Let's Encrypt has rate limits (50 certificates per domain per week). If you're testing, consider using the staging environment first.
+</Warning>
+
+## Updating the Server
+
+To update to the latest version of SlipStream server:
+
+```bash
+# Stop the service
+sudo systemctl stop slipstream-server
+
+# Re-run the installation script
+bash <(curl -Ls https://raw.githubusercontent.com/AliRezaBeigy/slipstream-rust-deploy/master/slipstream-rust-deploy.sh)
+
+# Start the service
+sudo systemctl start slipstream-server
+```
+
+The script will detect the existing installation and offer to upgrade it.
+
+## Firewall Configuration
+
+Ensure your firewall allows the necessary ports:
+
+### UFW (Ubuntu/Debian)
+
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 53/udp
+sudo ufw reload
+```
+
+### firewalld (Fedora/Rocky/CentOS)
+
+```bash
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --permanent --add-service=dns
+sudo firewall-cmd --reload
+```
+
+### iptables
+
+```bash
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
+sudo iptables-save | sudo tee /etc/iptables/rules.v4
+```
+
+## Troubleshooting
+
+### Service Won't Start
+
+1. Check service status: `sudo systemctl status slipstream-server`
+2. View detailed logs: `sudo journalctl -u slipstream-server -n 50`
+3. Verify binary exists: `ls -la /usr/local/bin/slipstream-server`
+4. Check file permissions: `sudo chmod +x /usr/local/bin/slipstream-server`
+
+### Connection Issues
+
+1. Verify DNS resolution: `dig +short YOUR_DOMAIN`
+2. Check if ports are listening: `sudo netstat -tlnp`
+3. Test port accessibility from outside: Use online port checkers
+4. Review firewall rules: `sudo ufw status` or `sudo firewall-cmd --list-all`
+
+### Certificate Errors
+
+1. Verify certificates exist: `sudo ls -la /etc/letsencrypt/live/`
+2. Check certificate expiration: `sudo certbot certificates`
+3. Test certificate validity: `openssl s_client -connect YOUR_DOMAIN:443`
+4. Review Let's Encrypt logs: `sudo cat /var/log/letsencrypt/letsencrypt.log`
+
+<Info>
+For additional support, visit the [slipstream-rust-deploy repository](https://github.com/AliRezaBeigy/slipstream-rust-deploy) and check existing issues or create a new one.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configure DNS" icon="globe" href="/server/dns-setup">
+    Set up DNS records for optimal performance
+  </Card>
+  <Card title="Connect your client" icon="plug" href="/quickstart">
+    Connect SlipStream GUI to your new server
+  </Card>
+</CardGroup>

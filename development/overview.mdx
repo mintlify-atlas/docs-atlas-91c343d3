@@ -1,0 +1,156 @@
+---
+title: Development overview
+description: Overview of the SlipStream GUI development environment and architecture
+---
+
+SlipStream GUI is a cross-platform desktop application built with modern web technologies. This guide provides an overview of the project structure, tech stack, and development workflow.
+
+## Tech stack
+
+SlipStream GUI is built using the following technologies:
+
+### Core technologies
+
+- **Electron v28.0.0** - Cross-platform desktop application framework
+- **Node.js 18+** - JavaScript runtime for backend functionality
+- **HTML/CSS/JavaScript** - Frontend UI and rendering
+
+### Key dependencies
+
+- **http-proxy (1.18.1)** - HTTP proxy server implementation
+- **socks (^2.7.1)** - SOCKS5 protocol implementation
+- **socks-proxy-agent (^8.0.2)** - SOCKS5 agent for HTTP requests
+- **ip (^2.0.1)** - IP address utilities
+
+### Build tools
+
+- **electron-builder (^24.9.1)** - Package and build tool for Electron apps
+- **Node.js scripts** - Custom build and verification scripts
+
+## Development prerequisites
+
+Before starting development, ensure you have:
+
+- **Node.js 16+** (18+ recommended)
+- **npm** (comes with Node.js)
+- **Git** for version control
+- Platform-specific tools:
+  - **macOS**: Xcode Command Line Tools
+  - **Windows**: Windows SDK (for building)
+  - **Linux**: Standard build tools (gcc, make)
+
+## Project structure
+
+The project follows a simple Electron application structure:
+
+```
+SlipStream-GUI/
+├── assets/              # App icons and images
+│   └── icon.png
+├── binaries/           # SlipStream client binaries (not in repo)
+│   ├── slipstream-client-mac-arm64
+│   ├── slipstream-client-mac-intel
+│   ├── slipstream-client-win.exe
+│   └── slipstream-client-linux
+├── scripts/            # Build and utility scripts
+│   ├── download-binaries.js
+│   └── verify-binaries.js
+├── main.js            # Electron main process
+├── index.html         # UI and renderer process
+├── check-system-proxy.js  # System proxy checker
+├── package.json       # Dependencies and configuration
+├── BUILD.md          # Build documentation
+└── CONTRIBUTING.md   # Contribution guidelines
+```
+
+### Key files
+
+- **main.js** - Electron main process that handles:
+  - Window management
+  - SlipStream client process management
+  - HTTP proxy server
+  - System proxy configuration
+  - IPC communication with renderer
+
+- **index.html** - Renderer process containing:
+  - User interface
+  - Settings management
+  - Status monitoring
+  - Logs display
+
+- **package.json** - Project configuration including:
+  - Dependencies
+  - Build scripts
+  - electron-builder configuration
+
+## Architecture
+
+SlipStream GUI implements a multi-layer proxy architecture:
+
+```
+Your Applications
+    ↓ HTTP/HTTPS
+HTTP Proxy Server (127.0.0.1:8080)
+    ↓ SOCKS5 Protocol
+SOCKS5 Client (127.0.0.1:5201)
+    ↓ Encrypted Tunnel
+SlipStream VPN Server
+```
+
+### Components
+
+1. **SlipStream Client** - Native binary that establishes SOCKS5 proxy on port 5201
+2. **HTTP Proxy Server** - Node.js server on port 8080 converting HTTP to SOCKS5
+3. **System Proxy** - Automatic system proxy configuration for seamless routing
+
+## Development workflow
+
+The typical development workflow:
+
+<Steps>
+  <Step title="Clone and setup">
+    Clone the repository and install dependencies
+  </Step>
+  
+  <Step title="Download binaries">
+    Download the latest SlipStream client binaries
+  </Step>
+  
+  <Step title="Develop">
+    Run the app in development mode and make changes
+  </Step>
+  
+  <Step title="Test">
+    Test functionality on your target platform(s)
+  </Step>
+  
+  <Step title="Build">
+    Build the application for distribution
+  </Step>
+</Steps>
+
+## Configuration
+
+Settings are stored in `settings.json` (created automatically):
+
+- DNS Resolver address
+- SlipStream server domain
+- Verbose logging preference
+- Proxy bypass list (domains/addresses excluded from proxy)
+- SOCKS5 authentication credentials
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Development setup" icon="gear" href="/development/setup">
+    Get your development environment ready
+  </Card>
+  
+  <Card title="Building" icon="hammer" href="/development/building">
+    Learn how to build the application
+  </Card>
+  
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Contribute to the project
+  </Card>
+</CardGroup>

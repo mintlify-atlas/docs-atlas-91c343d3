@@ -1,0 +1,572 @@
+---
+title: Advanced settings
+description: Configure advanced features including SOCKS5 authentication, workspaces, and detailed logging
+---
+
+## SOCKS5 authentication
+
+SlipStream GUI supports SOCKS5 authentication for the internal SOCKS5 proxy (port 5201). This adds a layer of security to the SOCKS5 connection between the HTTP proxy and the SlipStream client.
+
+<Warning>
+SOCKS5 authentication is hidden in the UI by default as it's intended for advanced users. The HTTP proxy on port 8080 does not use this authentication.
+</Warning>
+
+### When to use SOCKS5 authentication
+
+- When you need to secure the SOCKS5 proxy (port 5201)
+- For advanced proxy chaining scenarios
+- When multiple users share the same PC
+- For compliance with security policies
+
+<Note>
+Most users don't need SOCKS5 authentication. The HTTP proxy (port 8080) and mobile device sharing do not require or use these credentials.
+</Note>
+
+### Configuration
+
+SOCKS5 authentication settings are stored in `settings.json`:
+
+```json
+{
+  "socks5AuthEnabled": true,
+  "socks5AuthUsername": "your-username",
+  "socks5AuthPassword": "your-password"
+}
+```
+
+### How it works
+
+When enabled:
+1. The HTTP proxy (port 8080) authenticates to the SOCKS5 proxy (port 5201) using the credentials
+2. The SlipStream client enforces authentication on port 5201
+3. Direct connections to port 5201 require username/password
+
+<Info>
+The HTTP proxy automatically handles SOCKS5 authentication internally. Client applications connecting to port 8080 don't need to provide credentials.
+</Info>
+
+## Workspaces/Presets
+
+Workspaces (also called presets) allow you to save and quickly switch between different VPN configurations. This is useful when you connect from different locations or use different servers.
+
+### Use cases
+
+<CardGroup cols={2}>
+  <Card title="Multiple locations" icon="location-dot">
+    Switch between home, office, and cafe network configurations
+  </Card>
+  
+  <Card title="Different servers" icon="server">
+    Save configurations for different VPN servers
+  </Card>
+  
+  <Card title="Split tunneling profiles" icon="split">
+    Different bypass lists for different scenarios
+  </Card>
+  
+  <Card title="Testing configurations" icon="flask">
+    Experiment with settings without losing your working config
+  </Card>
+</CardGroup>
+
+### What's saved in a workspace
+
+Each workspace stores:
+- **DNS Resolver**: The DNS server IP and port
+- **Domain**: Your SlipStream server domain
+- **Proxy Bypass List**: Domains/IPs that bypass the VPN
+
+<Note>
+Workspaces are stored in the `workspaces` array in `settings.json`, with each workspace having a unique ID and name.
+</Note>
+
+### Creating a workspace
+
+<Steps>
+  <Step title="Click the + button">
+    In the Presets bar (below the header), click the **"+"** button.
+  </Step>
+
+  <Step title="Enter workspace name">
+    A dialog will appear asking for the workspace name (e.g., "Home", "Office", "Cafe").
+  </Step>
+
+  <Step title="Confirm creation">
+    Click **"Create"** to save the new workspace with your current configuration.
+  </Step>
+
+  <Step title="Switch workspaces">
+    The new workspace becomes active and appears as a tab in the Presets bar.
+  </Step>
+</Steps>
+
+### Switching workspaces
+
+Simply click any workspace tab in the Presets bar. The application will:
+- Load that workspace's configuration
+- Update DNS Resolver, Domain, and Proxy Bypass List
+- Save the active workspace preference
+
+<Warning>
+If the VPN is running when you switch workspaces, you'll need to restart it to apply the new configuration.
+</Warning>
+
+### Renaming a workspace
+
+<Steps>
+  <Step title="Select the workspace">
+    Click the workspace tab you want to rename.
+  </Step>
+
+  <Step title="Click rename button">
+    Click the pencil/edit icon in the workspace actions area.
+  </Step>
+
+  <Step title="Enter new name">
+    Type the new name in the dialog.
+  </Step>
+
+  <Step title="Save changes">
+    Click **"Rename"** to save.
+  </Step>
+</Steps>
+
+### Deleting a workspace
+
+<Steps>
+  <Step title="Select the workspace">
+    Click the workspace tab you want to delete.
+  </Step>
+
+  <Step title="Click delete button">
+    Click the trash icon in the workspace actions area.
+  </Step>
+
+  <Step title="Confirm deletion">
+    Confirm that you want to delete the workspace.
+    
+    <Warning>
+    This action cannot be undone. The workspace configuration will be permanently deleted.
+    </Warning>
+  </Step>
+</Steps>
+
+<Info>
+You cannot delete a workspace if it's the only one remaining. At least one workspace must exist.
+</Info>
+
+### Workspace data structure
+
+Workspaces are stored in `settings.json`:
+
+```json
+{
+  "workspaces": [
+    {
+      "id": "workspace-1234567890",
+      "name": "Home",
+      "resolver": "8.8.8.8:53",
+      "domain": "s.example.com",
+      "proxyBypassList": [
+        "*.local",
+        "192.168.1.0/24"
+      ]
+    },
+    {
+      "id": "workspace-0987654321",
+      "name": "Office",
+      "resolver": "1.1.1.1:53",
+      "domain": "vpn.company.com",
+      "proxyBypassList": [
+        "*.internal.company.com",
+        "10.0.0.0/8"
+      ]
+    }
+  ],
+  "activeWorkspaceId": "workspace-1234567890"
+}
+```
+
+## Proxy bypass list syntax
+
+The proxy bypass list supports flexible patterns for excluding traffic from the VPN.
+
+### Pattern types
+
+**1. Wildcard domains**
+
+Use `*` to match subdomains:
+
+```
+*.google.com        # All Google subdomains
+*.local             # All .local domains
+*internal*          # Any domain containing 'internal'
+```
+
+**2. Exact domains**
+
+Direct matches without wildcards:
+
+```
+example.com         # Only example.com
+localhost           # Localhost
+my-router.local     # Specific hostname
+```
+
+**3. IP addresses**
+
+Single IPs or CIDR ranges:
+
+```
+127.0.0.1           # Loopback
+192.168.1.1         # Router
+192.168.1.0/24      # Entire subnet
+10.0.0.0/8          # Large private range
+```
+
+**4. Platform-specific**
+
+Special keywords (Windows):
+
+```
+<local>             # All local addresses (Windows)
+```
+
+### Example configurations
+
+<Tabs>
+  <Tab title="Home network">
+    Bypass local resources:
+    ```
+    localhost
+    127.0.0.1
+    192.168.1.0/24
+    *.local
+    ```
+  </Tab>
+  
+  <Tab title="Corporate network">
+    Bypass internal company resources:
+    ```
+    *.internal.company.com
+    *.corp
+    10.0.0.0/8
+    172.16.0.0/12
+    company-sharepoint
+    ```
+  </Tab>
+  
+  <Tab title="Split tunneling">
+    VPN for international sites, direct for local:
+    ```
+    *.gov
+    *.local-news-site.com
+    192.168.0.0/16
+    10.0.0.0/8
+    local-streaming-service.com
+    ```
+  </Tab>
+  
+  <Tab title="Minimal (default)">
+    Just bypass localhost:
+    ```
+    localhost
+    127.0.0.1
+    ```
+  </Tab>
+</Tabs>
+
+### How bypass list is applied
+
+<Info>
+The bypass list is applied at the **system proxy level**, not within the HTTP proxy itself.
+</Info>
+
+**macOS**: Uses `networksetup -setproxybypassdomains`
+
+**Windows**: Sets `ProxyOverride` registry key (WinINET) and `bypass-list` parameter (WinHTTP)
+
+**Linux**: Sets `ignore-hosts` in gsettings (GNOME)
+
+### Testing your bypass list
+
+<Steps>
+  <Step title="Add entries to bypass list">
+    Enter your bypass patterns in the Proxy Bypass List field.
+  </Step>
+
+  <Step title="Save and restart VPN">
+    Stop the VPN if running, then start it again.
+  </Step>
+
+  <Step title="Test bypassed domains">
+    Try accessing a bypassed domain:
+    - Should connect directly (not through VPN)
+    - Check logs for confirmation
+  </Step>
+
+  <Step title="Test non-bypassed domains">
+    Try a domain not in the bypass list:
+    - Should go through VPN
+    - Check your IP at whatismyip.com
+  </Step>
+</Steps>
+
+## Verbose logging
+
+Verbose logging provides detailed diagnostic information about proxy operations.
+
+### What verbose logging includes
+
+<Tabs>
+  <Tab title="HTTP requests">
+    Every HTTP request with details:
+    ```
+    → GET http://example.com/page
+    🌐 HTTP GET example.com/page via SOCKS5
+    📥 Response 200 from example.com
+    📤 Sent response 200 to client
+    ```
+  </Tab>
+  
+  <Tab title="HTTPS tunnels">
+    CONNECT method for HTTPS:
+    ```
+    🔒 CONNECT example.com:443 (HTTPS)
+    ✅ SOCKS5 connected to example.com:443
+    📤 Sent 200 Connection established
+    🔗 Tunnel active: example.com:443
+    🔌 Client closed
+    🔌 Target closed
+    ```
+  </Tab>
+  
+  <Tab title="Errors and debugging">
+    Detailed error information:
+    ```
+    ❌ CONNECT failed: Connection refused
+    ❌ Proxy request error: ETIMEDOUT
+    ⏱️ Request timeout
+    ❌ Client error: ECONNRESET
+    ```
+  </Tab>
+</Tabs>
+
+### Enabling verbose logging
+
+Verbose logging can be enabled in two places:
+
+**1. In the logs panel header:**
+- Toggle the **"Verbose Logging"** switch
+- Takes effect immediately
+- Persists across sessions
+
+**2. In settings.json:**
+```json
+{
+  "verbose": true
+}
+```
+
+### Performance considerations
+
+<Warning>
+Verbose logging generates significantly more output and may impact performance when handling high request volumes.
+</Warning>
+
+**Impact:**
+- Increased CPU usage for logging
+- More memory for log buffer
+- Faster log panel scrolling
+- Disk I/O if logs are written to file
+
+**Recommendation:**
+- Enable only when troubleshooting
+- Disable for normal daily use
+- Clear logs frequently when verbose mode is active
+
+## Settings file location
+
+All SlipStream GUI configuration is stored in a single `settings.json` file.
+
+### Default locations
+
+<Tabs>
+  <Tab title="macOS">
+    ```
+    ~/Library/Application Support/SlipStream GUI/settings.json
+    ```
+    
+    **To access:**
+    1. Open Finder
+    2. Press Cmd+Shift+G
+    3. Enter the path above
+    4. Click "Go"
+  </Tab>
+  
+  <Tab title="Windows">
+    ```
+    %APPDATA%\SlipStream GUI\settings.json
+    ```
+    
+    **To access:**
+    1. Press Win+R
+    2. Type `%APPDATA%\SlipStream GUI`
+    3. Press Enter
+  </Tab>
+  
+  <Tab title="Linux">
+    ```
+    ~/.config/SlipStream GUI/settings.json
+    ```
+    
+    **To access:**
+    ```bash
+    cd ~/.config/SlipStream\ GUI/
+    nano settings.json
+    ```
+  </Tab>
+</Tabs>
+
+### Settings file structure
+
+Complete example of `settings.json`:
+
+```json
+{
+  "resolver": "8.8.8.8:53",
+  "domain": "s.example.com",
+  "mode": "proxy",
+  "verbose": false,
+  "socks5AuthEnabled": false,
+  "socks5AuthUsername": "",
+  "socks5AuthPassword": "",
+  "systemProxyEnabledByApp": false,
+  "systemProxyServiceName": "",
+  "winInetPrevCaptured": false,
+  "winInetPrevProxyEnable": null,
+  "winInetPrevProxyServer": "",
+  "winInetPrevProxyOverride": "",
+  "proxyBypassList": [
+    "localhost",
+    "127.0.0.1",
+    "*.local"
+  ],
+  "workspaces": [
+    {
+      "id": "workspace-1234567890",
+      "name": "Default",
+      "resolver": "8.8.8.8:53",
+      "domain": "s.example.com",
+      "proxyBypassList": []
+    }
+  ],
+  "activeWorkspaceId": "workspace-1234567890"
+}
+```
+
+### Manual editing
+
+<Warning>
+Exercise caution when manually editing `settings.json`. Invalid JSON will cause the app to revert to defaults.
+</Warning>
+
+**Before editing:**
+1. Stop SlipStream GUI
+2. Make a backup copy of `settings.json`
+3. Edit with a text editor that validates JSON
+4. Save the file
+5. Restart SlipStream GUI
+
+**If settings fail to load:**
+- The app will use default settings
+- Check for JSON syntax errors
+- Restore from backup if needed
+- Delete `settings.json` to reset to defaults
+
+## Configuration persistence
+
+SlipStream GUI automatically persists all settings across application restarts.
+
+### What's persisted
+
+<Info>
+All configuration changes are immediately written to `settings.json`.
+</Info>
+
+**Always saved:**
+- DNS Resolver and Domain
+- Verbose logging preference
+- Proxy bypass list
+- SOCKS5 authentication settings
+- All workspaces and active workspace
+- System proxy state tracking (for safe cleanup)
+
+**Not saved:**
+- Current VPN connection state (always stops on app exit)
+- Log buffer contents
+- Temporary UI state
+
+### Settings migration
+
+When upgrading from older versions:
+
+<Steps>
+  <Step title="Legacy settings detection">
+    If `settings.json` exists in the app directory (old location), it's automatically migrated to the user data directory.
+  </Step>
+
+  <Step title="One-time copy">
+    The migration happens once on first launch after upgrade.
+  </Step>
+
+  <Step title="Fallback">
+    If migration fails, the app uses defaults and you can reconfigure manually.
+  </Step>
+</Steps>
+
+### Backup and restore
+
+**To backup your configuration:**
+
+1. Locate your `settings.json` file (see paths above)
+2. Copy it to a safe location
+3. Include the date in the backup filename (e.g., `settings-2024-01-15.json`)
+
+**To restore from backup:**
+
+1. Stop SlipStream GUI
+2. Replace current `settings.json` with your backup
+3. Restart SlipStream GUI
+4. Verify settings loaded correctly
+
+### Resetting to defaults
+
+To completely reset all settings:
+
+<Steps>
+  <Step title="Stop the application">
+    Quit SlipStream GUI completely.
+  </Step>
+
+  <Step title="Delete settings file">
+    Delete `settings.json` from the user data directory.
+  </Step>
+
+  <Step title="Restart application">
+    Launch SlipStream GUI again.
+  </Step>
+
+  <Step title="Reconfigure">
+    The app will create a new `settings.json` with default values:
+    - DNS Resolver: `8.8.8.8:53`
+    - Domain: `s.example.com`
+    - Verbose logging: disabled
+    - Empty bypass list
+    - Default workspace
+  </Step>
+</Steps>
+
+<Note>
+Deleting `settings.json` will remove all workspaces, custom configurations, and saved preferences. Make a backup first if you might want to restore them later.
+</Note>

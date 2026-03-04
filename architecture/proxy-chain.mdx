@@ -1,0 +1,430 @@
+---
+title: Proxy chain
+description: Deep dive into the multi-layer proxy architecture and request routing
+---
+
+SlipStream GUI implements a three-layer proxy chain that transforms application traffic into encrypted VPN traffic. Understanding this chain is crucial for debugging and extending the application.
+
+## Overview
+
+The proxy chain consists of three distinct layers:
+
+```
+Layer 1: HTTP Proxy Server (Port 8080)
+         ↓
+Layer 2: SOCKS5 Client (Port 5201) 
+         ↓
+Layer 3: SlipStream VPN Server (Encrypted)
+```
+
+## Layer 1: HTTP Proxy Server
+
+### Implementation
+
+The HTTP proxy server is implemented in Node.js using the native `http` module and handles both regular HTTP requests and HTTPS CONNECT tunnels.
+
+From `main.js:405-432`:
+
+```javascript
+function startHttpProxy() {
+  return new Promise((resolve, reject) => {
+    function buildSocks5Url() {
+      if (!socks5AuthEnabled) return `socks5://127.0.0.1:${SOCKS5_PORT}`;
+      if (!socks5AuthUsername || !socks5AuthPassword) 
+        return `socks5://127.0.0.1:${SOCKS5_PORT}`;
+      const u = encodeURIComponent(socks5AuthUsername);
+      const p = encodeURIComponent(socks5AuthPassword);
+      return `socks5://${u}:${p}@127.0.0.1:${SOCKS5_PORT}`;
+    }
+
+    // Create SOCKS5 agent with optional authentication
+    let socksAgent = null;
+    let socksAgentUrl = null;
+    function getSocksAgent() {
+      const url = buildSocks5Url();
+      if (!socksAgent || socksAgentUrl !== url) {
+        socksAgent = new SocksProxyAgent(url);
+        socksAgentUrl = url;
+      }
+      return socksAgent;
+    }
+
+    // Create HTTP proxy server
+    httpProxyServer = http.createServer();
+    // ...
+  });
+}
+```
+
+### HTTPS CONNECT Handling
+
+HTTPS traffic uses the HTTP CONNECT method to establish a tunnel. From `main.js:435-533`:
+
+```javascript
+httpProxyServer.on('connect', (req, clientSocket, head) => {
+  const urlParts = req.url.split(':');
+  const host = urlParts[0];
+  const port = parseInt(urlParts[1] || '443');
+  
+  // Connect through SOCKS5
+  const socksProxy = {
+    host: '127.0.0.1',
+    port: SOCKS5_PORT,
+    type: 5
+  };
+  
+  if (socks5AuthEnabled && socks5AuthUsername && socks5AuthPassword) {
+    socksProxy.userId = socks5AuthUsername;
+    socksProxy.password = socks5AuthPassword;
+  }
+
+  SocksClient.createConnection({
+    proxy: { ...socksProxy },
+    command: 'connect',
+    destination: { host: host, port: port }
+  }).then((info) => {
+    const targetSocket = info.socket;
+    
+    // Send 200 response to client
+    clientSocket.write('HTTP/1.1 200 Connection established\r\n\r\n');
+    
+    // Write any buffered data
+    if (head && head.length > 0) {
+      targetSocket.write(head);
+    }
+    
+    // Configure sockets for optimal performance
+    clientSocket.setNoDelay(true);
+    targetSocket.setNoDelay(true);
+    
+    // Pipe bidirectionally
+    clientSocket.pipe(targetSocket, { end: false });
+    targetSocket.pipe(clientSocket, { end: false });
+  }).catch((err) => {
+    clientSocket.write(`HTTP/1.1 500 Proxy Error\r\n\r\n${err.message}`);
+    clientSocket.end();
+  });
+});
+```
+
+<Note>
+  The CONNECT method creates a bidirectional TCP tunnel. The proxy doesn't see the encrypted TLS traffic - it just forwards raw bytes.
+</Note>
+
+### Regular HTTP Request Handling
+
+For non-encrypted HTTP requests, the proxy parses and forwards them through SOCKS5. From `main.js:536-600`:
+
+```javascript
+httpProxyServer.on('request', (req, res) => {
+  const url = require('url');
+  
+  // For HTTP proxy, browsers send absolute URLs
+  let targetUrl = req.url;
+  let parsedUrl;
+  
+  if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+    parsedUrl = url.parse(targetUrl);
+  } else {
+    // Relative URL - use Host header
+    const host = req.headers.host || 'localhost';
+    targetUrl = `http://${host}${targetUrl.startsWith('/') ? targetUrl : '/' + targetUrl}`;
+    parsedUrl = url.parse(targetUrl);
+  }
+  
+  const isHttps = parsedUrl.protocol === 'https:';
+  const client = isHttps ? https : httpLib;
+  
+  // Build request options
+  const options = {
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port || (isHttps ? 443 : 80),
+    path: parsedUrl.path || '/',
+    method: req.method,
+    headers: {}
+  };
+  
+  // Forward request through SOCKS5 agent
+  const proxyReq = client.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+  
+  req.pipe(proxyReq);
+});
+```
+
+### Error Resilience
+
+The proxy implements robust error handling to prevent crashes from network issues. From `main.js:447-454`:
+
+```javascript
+// Prevent ECONNRESET/EPIPE from crashing the process
+const ignoreCodes = ['ECONNRESET', 'EPIPE', 'ECONNABORTED', 'ECANCELED', 'ETIMEDOUT'];
+clientSocket.on('error', (err) => {
+  if (!ignoreCodes.includes(err.code)) {
+    logRequest(`❌ Client error: ${err.code}`, true);
+  }
+});
+```
+
+<Warning>
+  Client disconnections during data transfer are common and expected. The proxy silently ignores these to avoid log spam.
+</Warning>
+
+## Layer 2: SOCKS5 Client
+
+### Native Binary
+
+The SOCKS5 client is implemented as a native binary (`slipstream-client-*`) that runs as a separate process. It listens on port 5201 and handles SOCKS5 protocol negotiation.
+
+### Protocol Details
+
+SOCKS5 provides a standardized way to proxy TCP connections:
+
+1. **Client Authentication** (optional)
+   - Username/password authentication
+   - No authentication
+
+2. **Connection Request**
+   - Client sends: destination host and port
+   - Server responds: connection status
+
+3. **Data Transfer**
+   - Bidirectional raw socket forwarding
+   - No protocol-specific handling
+
+### Authentication Support
+
+From `main.js:472-475`:
+
+```javascript
+if (socks5AuthEnabled && socks5AuthUsername && socks5AuthPassword) {
+  socksProxy.userId = socks5AuthUsername;
+  socksProxy.password = socks5AuthPassword;
+}
+```
+
+<Info>
+  SOCKS5 authentication is optional. Enable it in Settings → Advanced to add an extra security layer.
+</Info>
+
+## Layer 3: SlipStream VPN Server
+
+### Encrypted Tunnel
+
+The native SlipStream client establishes an encrypted tunnel to the VPN server using:
+
+- **DNS over HTTPS**: Queries through specified resolver (e.g., 8.8.8.8:53)
+- **Domain fronting**: Uses configured domain for connection
+- **Encryption**: All traffic encrypted in transit
+
+### Connection Parameters
+
+From `main.js:311`:
+
+```javascript
+const args = ['--resolver', resolver, '--domain', domain];
+slipstreamProcess = spawn(clientPath, args, {
+  stdio: 'pipe',
+  detached: false
+});
+```
+
+Example:
+```bash
+slipstream-client-mac-arm64 --resolver 8.8.8.8:53 --domain s.example.com
+```
+
+## System Proxy Integration
+
+### macOS Configuration
+
+On macOS, the app uses `networksetup` to configure system proxy settings. From `main.js:807-820`:
+
+```javascript
+await execAsync(`networksetup -setwebproxy "${iface}" 127.0.0.1 ${HTTP_PROXY_PORT}`);
+await execAsync(`networksetup -setsecurewebproxy "${iface}" 127.0.0.1 ${HTTP_PROXY_PORT}`);
+await execAsync(`networksetup -setwebproxystate "${iface}" on`);
+await execAsync(`networksetup -setsecurewebproxystate "${iface}" on`);
+
+// Set bypass domains if configured
+if (proxyBypassList.length > 0) {
+  const bypassDomains = proxyBypassList.join(' ');
+  await execAsync(`networksetup -setproxybypassdomains "${iface}" ${bypassDomains}`);
+}
+
+systemProxyEnabledByApp = true;
+systemProxyServiceName = iface;
+saveSettings({ systemProxyEnabledByApp, systemProxyServiceName });
+```
+
+### Windows Configuration
+
+Windows requires configuring both WinINET (user apps) and WinHTTP (system services). From `main.js:864-876`:
+
+```javascript
+// Set WinINET (user proxy used by browsers and most apps)
+await execAsync(
+  `powershell -NoProfile -Command "$p='HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings'; ` +
+  `Set-ItemProperty -Path $p -Name ProxyEnable -Type DWord -Value 1; ` +
+  `Set-ItemProperty -Path $p -Name ProxyServer -Type String -Value '${proxyServer}'; ` +
+  `Set-ItemProperty -Path $p -Name ProxyOverride -Type String -Value '${bypassEntries}'"` +
+);
+
+// Set WinHTTP (used by some services)
+const bypassArg = proxyBypassList.length > 0
+  ? ` bypass-list="${bypassEntries}"`
+  : '';
+await execAsync(`netsh winhttp set proxy proxy-server="${proxyServer}"${bypassArg}`);
+```
+
+<Note>
+  The app saves the previous proxy settings before making changes, allowing clean restoration when disconnecting.
+</Note>
+
+### Linux Configuration
+
+Linux uses gsettings for GNOME-based desktops. From `main.js:888-900`:
+
+```javascript
+await execAsync(`gsettings set org.gnome.system.proxy mode 'manual'`);
+await execAsync(`gsettings set org.gnome.system.proxy.http host '127.0.0.1'`);
+await execAsync(`gsettings set org.gnome.system.proxy.http port ${HTTP_PROXY_PORT}`);
+await execAsync(`gsettings set org.gnome.system.proxy.https host '127.0.0.1'`);
+await execAsync(`gsettings set org.gnome.system.proxy.https port ${HTTP_PROXY_PORT}`);
+
+// Set bypass (ignore-hosts) if configured
+if (proxyBypassList.length > 0) {
+  const ignoreHosts = proxyBypassList.map(h => `'${h}'`).join(', ');
+  await execAsync(`gsettings set org.gnome.system.proxy ignore-hosts "[${ignoreHosts}]"`);
+}
+```
+
+## Request Flow Example
+
+### HTTPS Request (Most Common)
+
+1. **Browser sends CONNECT**
+   ```http
+   CONNECT example.com:443 HTTP/1.1
+   Host: example.com:443
+   ```
+
+2. **HTTP Proxy establishes SOCKS5 connection**
+   - Connects to 127.0.0.1:5201
+   - Sends SOCKS5 CONNECT command
+   - Destination: example.com:443
+
+3. **SOCKS5 Client connects through VPN**
+   - Encrypts connection request
+   - Sends to VPN server
+   - VPN server connects to example.com:443
+
+4. **Tunnel established**
+   - HTTP Proxy sends `200 Connection established`
+   - Browser begins TLS handshake with example.com
+   - All data flows through the tunnel
+
+### HTTP Request
+
+1. **Browser sends GET request**
+   ```http
+   GET http://example.com/page HTTP/1.1
+   Host: example.com
+   ```
+
+2. **HTTP Proxy parses request**
+   - Extracts destination: example.com:80
+   - Creates SOCKS5 connection
+
+3. **Request forwarded**
+   - HTTP request sent through SOCKS5 tunnel
+   - Response received and piped back to browser
+
+## Performance Considerations
+
+### Socket Options
+
+From `main.js:501-502`:
+
+```javascript
+clientSocket.setNoDelay(true);
+targetSocket.setNoDelay(true);
+```
+
+<Info>
+  `setNoDelay(true)` disables Nagle's algorithm, reducing latency for small packets at the cost of slightly more bandwidth usage.
+</Info>
+
+### Connection Pooling
+
+The SOCKS5 agent is reused across requests to avoid connection overhead:
+
+```javascript
+function getSocksAgent() {
+  const url = buildSocks5Url();
+  if (!socksAgent || socksAgentUrl !== url) {
+    socksAgent = new SocksProxyAgent(url);
+    socksAgentUrl = url;
+  }
+  return socksAgent;
+}
+```
+
+### Timeout Management
+
+From `main.js:552-558`:
+
+```javascript
+req.setTimeout(30000, () => {
+  logRequest(`⏱️ Request timeout`, true);
+  if (!res.headersSent) {
+    res.writeHead(408);
+    res.end('Request Timeout');
+  }
+});
+```
+
+## Debugging the Proxy Chain
+
+### Verbose Logging
+
+Enable verbose logging in Settings → Advanced to see detailed request logs:
+
+```javascript
+const logRequest = (message, isError = false, isVerbose = false) => {
+  // Skip verbose messages if verbose logging is disabled
+  if (isVerbose && !verboseLogging) return;
+  
+  const logMsg = `[${requestId}] ${message}`;
+  console.log(logMsg);
+  if (isError) safeSend('slipstream-error', logMsg);
+  else safeSend('slipstream-log', logMsg);
+};
+```
+
+### Testing Individual Layers
+
+<Steps>
+  <Step title="Test SOCKS5 directly">
+    Configure your application to use SOCKS5 proxy at 127.0.0.1:5201 (bypasses HTTP proxy)
+  </Step>
+  <Step title="Test HTTP proxy without VPN">
+    Stop SlipStream client but leave HTTP proxy running to test proxy logic
+  </Step>
+  <Step title="Monitor process output">
+    Watch the Logs tab for connection attempts, errors, and data transfer
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture/overview">
+    Return to the main architecture documentation
+  </Card>
+  <Card title="Project Structure" icon="folder" href="/architecture/project-structure">
+    Explore the codebase organization
+  </Card>
+</CardGroup>

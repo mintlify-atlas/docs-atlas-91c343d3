@@ -1,0 +1,386 @@
+---
+title: "Windows troubleshooting"
+description: "Solve Windows-specific issues with SlipStream GUI"
+---
+
+## Run as Administrator
+
+For best functionality on Windows, especially system proxy configuration, run SlipStream GUI as Administrator.
+
+<AccordionGroup>
+  <Accordion title="Option 1: Right-click method">
+    Run with admin privileges for a single session:
+
+    1. Right-click on the SlipStream GUI shortcut or `.exe` file
+    2. Select **"Run as administrator"**
+    3. Click **"Yes"** in the UAC prompt
+
+    <Note>You'll need to do this each time you launch the app.</Note>
+  </Accordion>
+
+  <Accordion title="Option 2: Always run as administrator">
+    Configure the app to always run with admin privileges:
+
+    1. Right-click on the SlipStream GUI shortcut
+    2. Select **"Properties"**
+    3. Go to the **"Compatibility"** tab
+    4. Check **"Run this program as an administrator"**
+    5. Click **"OK"** and **"Apply"**
+
+    The app will now request admin privileges automatically on every launch.
+  </Accordion>
+
+  <Accordion title="Why administrator access is needed">
+    Administrator privileges are required for:
+
+    - **System proxy configuration**: Modifying `HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings`
+    - **WinHTTP proxy**: Running `netsh winhttp set proxy`
+    - **Killing processes on ports**: Using `taskkill` for port conflicts
+
+    **The app will work without admin privileges**, but:
+    - System proxy won't be configured automatically
+    - You'll need to configure proxy settings manually
+    - Port conflicts must be resolved manually
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+If the UAC prompt doesn't appear when running as Administrator, your system security settings may prevent privilege elevation. Check your Group Policy settings or contact your system administrator.
+</Warning>
+
+## System proxy configuration
+
+Windows uses both WinINET (user proxy) and WinHTTP (system proxy). SlipStream GUI configures both for maximum compatibility.
+
+<AccordionGroup>
+  <Accordion title="System proxy toggle has no effect">
+    This usually means the app doesn't have admin privileges.
+
+    **Solutions:**
+    1. Run the app as Administrator (see above)
+    2. Or configure proxy manually:
+       - Open **Settings** → **Network & Internet** → **Proxy**
+       - Enable **Manual proxy setup**
+       - **Proxy server**: `127.0.0.1:8080`
+       - **Port**: `8080`
+       - Click **Save**
+  </Accordion>
+
+  <Accordion title="Manual proxy configuration (WinINET)">
+    Configure the user proxy for browsers and most applications:
+
+    **Via Settings UI:**
+    1. **Settings** → **Network & Internet** → **Proxy**
+    2. **Manual proxy setup**
+    3. **Proxy server**: `127.0.0.1:8080`
+    4. **Use the proxy server except for addresses that start with**: `<local>`
+    5. Click **Save**
+
+    **Via Registry (Advanced):**
+    ```powershell
+    # Run in PowerShell (Admin)
+    $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+    Set-ItemProperty -Path $path -Name ProxyEnable -Type DWord -Value 1
+    Set-ItemProperty -Path $path -Name ProxyServer -Type String -Value '127.0.0.1:8080'
+    Set-ItemProperty -Path $path -Name ProxyOverride -Type String -Value '<local>'
+    ```
+  </Accordion>
+
+  <Accordion title="Configure WinHTTP proxy">
+    Some applications and Windows services use WinHTTP instead of WinINET.
+
+    **Set WinHTTP proxy:**
+    ```cmd
+    # Run in Command Prompt (Admin)
+    netsh winhttp set proxy proxy-server="127.0.0.1:8080" bypass-list="<local>"
+    ```
+
+    **Check WinHTTP proxy status:**
+    ```cmd
+    netsh winhttp show proxy
+    ```
+
+    **Reset WinHTTP proxy:**
+    ```cmd
+    netsh winhttp reset proxy
+    ```
+
+    <Note>SlipStream GUI automatically configures both WinINET and WinHTTP when running as Administrator.</Note>
+  </Accordion>
+
+  <Accordion title="Proxy settings persist after stopping VPN">
+    If proxy settings remain after stopping the VPN:
+
+    **Reset via Command Prompt (Admin):**
+    ```cmd
+    netsh winhttp reset proxy
+    ```
+
+    **Reset via PowerShell (Admin):**
+    ```powershell
+    $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+    Set-ItemProperty -Path $path -Name ProxyEnable -Type DWord -Value 0
+    ```
+
+    **Via Settings:**
+    1. **Settings** → **Network & Internet** → **Proxy**
+    2. Turn off **Manual proxy setup**
+
+    <Note>The app attempts to restore previous proxy settings when it exits, but this requires admin privileges.</Note>
+  </Accordion>
+</AccordionGroup>
+
+## Windows Defender and antivirus
+
+Windows Defender or other antivirus software may quarantine the SlipStream client binary.
+
+<AccordionGroup>
+  <Accordion title="Binary quarantined or blocked">
+    If you see "SlipStream client binary not found" errors:
+
+    **Check Windows Defender Protection History:**
+    1. Open **Windows Security**
+    2. Go to **Virus & threat protection**
+    3. Click **Protection history**
+    4. Look for `slipstream-client-win.exe` in the list
+    5. If found, click **Actions** → **Restore** or **Allow**
+  </Accordion>
+
+  <Accordion title="Add exclusion for SlipStream GUI">
+    Prevent future quarantines:
+
+    1. Open **Windows Security**
+    2. Go to **Virus & threat protection**
+    3. Click **Manage settings** (under Virus & threat protection settings)
+    4. Scroll to **Exclusions**
+    5. Click **Add or remove exclusions**
+    6. Click **Add an exclusion** → **Folder**
+    7. Add your SlipStream GUI installation folder:
+       - Installer version: `C:\Program Files\SlipStream GUI`
+       - Portable version: Your chosen folder
+  </Accordion>
+
+  <Accordion title="Third-party antivirus software">
+    If using other antivirus (Norton, McAfee, Kaspersky, etc.):
+
+    1. Check quarantine/blocked files list
+    2. Restore `slipstream-client-win.exe`
+    3. Add installation folder to whitelist/exclusions
+    4. Reinstall if binary was deleted
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+Only add exclusions for software you trust. Download SlipStream GUI only from the [official releases page](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest).
+</Warning>
+
+## Firewall configuration
+
+Windows Firewall may block ports 8080 and 5201.
+
+<AccordionGroup>
+  <Accordion title="Allow SlipStream through firewall">
+    **Via Windows Defender Firewall:**
+    1. Open **Control Panel** → **Windows Defender Firewall**
+    2. Click **Allow an app or feature through Windows Defender Firewall**
+    3. Click **Change settings** (requires admin)
+    4. Click **Allow another app**
+    5. Browse to SlipStream GUI executable
+    6. Add it and ensure both **Private** and **Public** are checked
+  </Accordion>
+
+  <Accordion title="Manually allow ports (Command Prompt)">
+    Run as Administrator:
+
+    ```cmd
+    # Allow HTTP proxy port
+    netsh advfirewall firewall add rule name="SlipStream HTTP Proxy" dir=in action=allow protocol=TCP localport=8080
+
+    # Allow SOCKS5 port
+    netsh advfirewall firewall add rule name="SlipStream SOCKS5" dir=in action=allow protocol=TCP localport=5201
+    ```
+
+    **Remove rules when done:**
+    ```cmd
+    netsh advfirewall firewall delete rule name="SlipStream HTTP Proxy"
+    netsh advfirewall firewall delete rule name="SlipStream SOCKS5"
+    ```
+  </Accordion>
+
+  <Accordion title="Temporarily disable firewall (testing only)">
+    To test if the firewall is the issue:
+
+    1. Open **Windows Defender Firewall**
+    2. Click **Turn Windows Defender Firewall on or off**
+    3. Select **Turn off Windows Defender Firewall** (both private and public)
+    4. Test SlipStream GUI
+    5. **Remember to turn the firewall back on**
+
+    <Warning>Only disable the firewall temporarily for testing. Always re-enable it after troubleshooting.</Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Portable vs Installer versions
+
+<AccordionGroup>
+  <Accordion title="Which version should I use?">
+    **Installer version:**
+    - ✅ Easier to install and update
+    - ✅ Creates Start Menu shortcuts
+    - ✅ Registers uninstaller
+    - ❌ Requires installation to Program Files
+    - ❌ May trigger more antivirus checks
+
+    **Portable version:**
+    - ✅ No installation required
+    - ✅ Can run from USB drive
+    - ✅ Easier to move or delete
+    - ❌ No automatic shortcuts
+    - ❌ Settings stored in app folder (not AppData)
+  </Accordion>
+
+  <Accordion title="Portable version not starting">
+    Common issues with the portable version:
+
+    1. **Path with spaces**: Ensure the folder path doesn't have special characters
+    2. **Missing binaries**: Check that `binaries/slipstream-client-win.exe` exists
+    3. **Permissions**: Run from a folder where you have write permissions
+    4. **UAC**: Try running as Administrator
+  </Accordion>
+
+  <Accordion title="Migrating between versions">
+    **From installer to portable:**
+    1. Copy settings from: `%APPDATA%\SlipStream GUI\settings.json`
+    2. To: `<portable-folder>\settings.json`
+
+    **From portable to installer:**
+    1. Install the installer version
+    2. Copy `settings.json` from portable folder to `%APPDATA%\SlipStream GUI\`
+  </Accordion>
+</AccordionGroup>
+
+## Windows-specific error codes
+
+<AccordionGroup>
+  <Accordion title="Common error codes and solutions">
+    | Error | Meaning | Solution |
+    |-------|---------|----------|
+    | ENOENT | File not found | Binary missing or path incorrect |
+    | EACCES | Permission denied | Run as Administrator |
+    | EADDRINUSE | Port already in use | Kill process using port 8080 or 5201 |
+    | EPERM | Operation not permitted | Run as Administrator |
+    | ERROR_ELEVATION_REQUIRED | Admin needed | Run as Administrator |
+  </Accordion>
+
+  <Accordion title="Check port usage">
+    **Find what's using a port:**
+    ```cmd
+    # Check port 8080
+    netstat -ano | findstr :8080
+
+    # Check port 5201
+    netstat -ano | findstr :5201
+    ```
+
+    The last column is the Process ID (PID).
+
+    **Kill the process:**
+    ```cmd
+    # Run as Administrator, replace <PID> with actual number
+    taskkill /PID <PID> /F
+    ```
+  </Accordion>
+
+  <Accordion title="PowerShell execution policy errors">
+    If you see execution policy errors when configuring proxy:
+
+    **Check current policy:**
+    ```powershell
+    Get-ExecutionPolicy
+    ```
+
+    **Allow scripts (run as Admin):**
+    ```powershell
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+    ```
+
+    <Note>SlipStream GUI uses `-NoProfile` flag to bypass most execution policy restrictions.</Note>
+  </Accordion>
+</AccordionGroup>
+
+## Windows-specific logs
+
+<AccordionGroup>
+  <Accordion title="Application data location">
+    **Installer version:**
+    - Settings: `%APPDATA%\SlipStream GUI\settings.json`
+    - Logs: Check app's Logs panel
+
+    **Portable version:**
+    - Settings: `<app-folder>\settings.json`
+    - Binaries: `<app-folder>\binaries\slipstream-client-win.exe`
+  </Accordion>
+
+  <Accordion title="Check Windows Event Viewer">
+    For system-level errors:
+
+    1. Press `Win+X` → **Event Viewer**
+    2. Expand **Windows Logs** → **Application**
+    3. Look for errors from "SlipStream GUI" or "Electron"
+  </Accordion>
+
+  <Accordion title="Debug with PowerShell">
+    Run SlipStream from PowerShell to see detailed output:
+
+    ```powershell
+    # Navigate to installation directory
+    cd "C:\Program Files\SlipStream GUI"
+
+    # Run the executable
+    .\"SlipStream GUI.exe"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Sharing VPN over Wi-Fi
+
+Share your VPN connection with mobile devices on the same network.
+
+<AccordionGroup>
+  <Accordion title="Find your PC's IP address">
+    **Option 1: Command Prompt**
+    ```cmd
+    ipconfig
+    ```
+    Look for "IPv4 Address" under your active adapter (usually `192.168.x.x`).
+
+    **Option 2: Settings**
+    1. **Settings** → **Network & Internet**
+    2. Click your connection (Wi-Fi or Ethernet)
+    3. Find **IPv4 address**
+  </Accordion>
+
+  <Accordion title="Configure Android device">
+    1. **Settings** → **Wi-Fi**
+    2. Long-press your network → **Modify network**
+    3. **Advanced options** → **Proxy** → **Manual**
+    4. **Proxy hostname**: Your PC's IP (e.g., `192.168.1.100`)
+    5. **Proxy port**: `8080`
+    6. **Save**
+  </Accordion>
+
+  <Accordion title="Firewall rules for network sharing">
+    Allow incoming connections on port 8080:
+
+    ```cmd
+    # Run as Administrator
+    netsh advfirewall firewall add rule name="SlipStream Network Share" dir=in action=allow protocol=TCP localport=8080 profile=private
+    ```
+
+    <Note>This only allows connections from private networks (your home Wi-Fi), not public networks.</Note>
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+For issues not covered here, see [Common issues](/troubleshooting/common-issues) or open an issue on [GitHub](https://github.com/mirzaaghazadeh/SlipStreamGUI/issues).
+</Note>

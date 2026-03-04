@@ -1,97 +1,267 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: SlipStream GUI Documentation
+description: A modern, cross-platform GUI client for SlipStream VPN with system-wide tunneling and HTTP proxy interface
+mode: custom
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#020627] via-[#0a0e2e] to-[#020627] dark:from-[#020627] dark:via-[#0a0e2e] dark:to-[#020627] py-20 px-4 sm:px-6 lg:px-8">
+  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40"></div>
+  
+  <div className="relative max-w-7xl mx-auto">
+    <div className="grid lg:grid-cols-12 gap-12 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+          Secure VPN
+          <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#848c8e] to-[#cfd0d2]">Made Simple</span>
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-300 mb-8 max-w-2xl">
+          A modern, cross-platform GUI client for SlipStream VPN. Get system-wide secure tunneling with automatic proxy configuration on macOS, Windows, and Linux.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/quickstart" 
+            className="inline-flex items-center px-6 py-3 rounded-lg bg-[#848c8e] hover:bg-[#9a9fa2] text-white font-semibold transition-colors"
+          >
+            Get started
+            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </a>
+          <a 
+            href="/installation" 
+            className="inline-flex items-center px-6 py-3 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50 text-white font-semibold transition-colors"
+          >
+            Download
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute -inset-4 bg-gradient-to-r from-[#848c8e] to-[#cfd0d2] rounded-lg blur-2xl opacity-20"></div>
+          <div className="relative bg-[rgba(48,54,79,1)] border border-[rgba(96,99,146,1)] rounded-2xl p-6 shadow-2xl">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Status</span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                  Connected
+                </span>
+              </div>
+              <div className="border-t border-[rgba(96,99,146,1)] pt-3">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-300">
+                    <span>HTTP Proxy</span>
+                    <span className="text-white font-mono">127.0.0.1:8080</span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>SOCKS5 Proxy</span>
+                    <span className="text-white font-mono">127.0.0.1:5201</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 text-center">Quick start</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8 text-center max-w-2xl mx-auto">
+    Get up and running with SlipStream GUI in minutes
+  </p>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+  <Steps>
+    <Step title="Download and install">
+      Download the latest release for your platform from the [GitHub releases page](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest). Double-click the installer and follow the prompts.
 
-## Make it yours
+      <CodeGroup>
+      ```bash macOS (Apple Silicon)
+      # Download SlipStream-GUI-macOS-ARM64.dmg
+      # Open the DMG and drag to Applications
+      ```
 
-Design a docs site that looks great and empowers your users.
+      ```bash macOS (Intel)
+      # Download SlipStream-GUI-macOS-Intel.dmg
+      # Open the DMG and drag to Applications
+      ```
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+      ```bash Windows
+      # Download SlipStream-GUI-Windows-x64.exe
+      # Run the installer
+      ```
 
-## Create beautiful pages
+      ```bash Linux
+      # Download SlipStream-GUI-Linux-x64.AppImage
+      chmod +x SlipStream-GUI-Linux-x64.AppImage
+      ./SlipStream-GUI-Linux-x64.AppImage
+      ```
+      </CodeGroup>
+    </Step>
 
-Everything you need to create world-class documentation.
+    <Step title="Configure your server">
+      Launch SlipStream GUI and configure your SlipStream server settings:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+      - **Domain**: Your SlipStream server domain (e.g., `s.example.com`)
+      - **DNS Resolver**: Your DNS server (default: `8.8.8.8:53`)
 
-## Need inspiration?
+      <Note>
+        Don't have a server yet? Check out [slipstream-rust-deploy](https://github.com/AliRezaBeigy/slipstream-rust-deploy) for one-command server deployment.
+      </Note>
+    </Step>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+    <Step title="Start the VPN">
+      Click the **Start VPN** button and wait for the status indicators to show "Running". Your traffic is now securely routed through SlipStream!
+
+      Use the **Test Proxy Connection** button to verify everything is working correctly.
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore by topic</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Learn how to use SlipStream GUI's powerful features
+  </p>
+
+  <CardGroup cols={2}>
+    <Card title="Basic usage" icon="play" href="/guides/basic-usage">
+      Learn the fundamentals of connecting, monitoring, and managing your VPN connection
+    </Card>
+    <Card title="DNS configuration" icon="network-wired" href="/guides/dns-configuration">
+      Test and configure DNS servers with the built-in concurrent DNS checker
+    </Card>
+    <Card title="System proxy" icon="gear" href="/guides/system-proxy">
+      Understand automatic system proxy configuration and bypass lists
+    </Card>
+    <Card title="Mobile sharing" icon="mobile" href="/guides/mobile-sharing">
+      Share your VPN connection with mobile devices on the same network
+    </Card>
+    <Card title="Advanced settings" icon="sliders" href="/guides/advanced-settings">
+      Configure workspaces, SOCKS5 authentication, and verbose logging
+    </Card>
+    <Card title="Server setup" icon="server" href="/server/overview">
+      Deploy your own SlipStream server with DNS and TLS configuration
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Key features</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Everything you need for secure, system-wide VPN tunneling
+  </p>
+
+  <div className="grid md:grid-cols-2 gap-6">
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Cross-platform</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Native support for macOS (Intel & Apple Silicon), Windows, and Linux with consistent UI and features</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Auto-configuration</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Automatically configures system proxy settings for seamless system-wide VPN routing</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Real-time monitoring</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Monitor connection status, view detailed logs, and test proxy functionality in real-time</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Mobile sharing</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Share your VPN connection with mobile devices via the built-in HTTP proxy on port 8080</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">DNS checker</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Test up to 100 DNS servers concurrently and apply working configurations with one click</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-xl p-6 hover:border-[#848c8e] dark:hover:border-[#848c8e] transition-colors">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#848c8e]/10 flex items-center justify-center">
+          <svg className="w-6 h-6 text-[#848c8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Split tunneling</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Exclude specific domains or IP ranges from the VPN with the proxy bypass list</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="bg-gradient-to-br from-[#020627] to-[#0a0e2e] dark:from-[#020627] dark:to-[#0a0e2e] rounded-2xl p-8 sm:p-12 text-center border border-[rgba(96,99,146,1)]">
+    <h2 className="text-3xl font-bold text-white mb-4">Ready to get started?</h2>
+    <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+      Download SlipStream GUI and experience secure, system-wide VPN tunneling in minutes
+    </p>
+    <div className="flex flex-wrap justify-center gap-4">
+      <a 
+        href="/quickstart" 
+        className="inline-flex items-center px-6 py-3 rounded-lg bg-[#848c8e] hover:bg-[#9a9fa2] text-white font-semibold transition-colors"
+      >
+        Get started
+      </a>
+      <a 
+        href="https://github.com/mirzaaghazadeh/SlipStreamGUI" 
+        className="inline-flex items-center px-6 py-3 rounded-lg border border-white/30 bg-white/10 hover:bg-white/20 hover:border-white/50 text-white font-semibold transition-colors"
+      >
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</div>

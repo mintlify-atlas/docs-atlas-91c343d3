@@ -1,0 +1,367 @@
+---
+title: "Settings API"
+description: "Internal settings management functions for loading, saving, and persisting configuration"
+---
+
+## Overview
+
+The Settings API provides functions for managing application configuration, including loading from disk, saving changes, and handling settings migration. These functions run in the main process and are called by IPC handlers.
+
+## Core Functions
+
+### loadSettings()
+
+Loads settings from the JSON file in the userData directory. Performs one-time migration from legacy settings location if needed.
+
+**Location:** `main.js:77-116`
+
+**Behavior:**
+
+1. Determines settings file path using `ensureSettingsFilePath()`
+2. Checks for legacy settings file and migrates if necessary
+3. Reads and parses `settings.json`
+4. Updates in-memory global variables with loaded values
+5. Applies defaults for any missing fields
+6. Logs errors but doesn't throw (non-fatal)
+
+**Source Code:**
+
+```javascript main.js
+function loadSettings() {
+  try {
+    const settingsPath = ensureSettingsFilePath();
+
+    // One-time migration: if a legacy settings file exists but userData settings doesn't,
+    // copy it to userData so packaged apps can persist changes.
+    if (!fs.existsSync(settingsPath) && fs.existsSync(LEGACY_SETTINGS_FILE)) {
+      try {
+        const legacyData = fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8');
+        fs.writeFileSync(settingsPath, legacyData);
+      } catch (err) {
+        console.warn('Settings migration skipped:', err?.message || err);
+      }
+    }
+
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8');
+      const settings = JSON.parse(data);
+      if (settings.resolver) RESOLVER = settings.resolver;
+      if (settings.domain) DOMAIN = settings.domain;
+      if (settings.mode) useTunMode = (settings.mode === 'tun');
+      if (settings.verbose !== undefined) verboseLogging = settings.verbose;
+      if (settings.socks5AuthEnabled !== undefined) socks5AuthEnabled = !!settings.socks5AuthEnabled;
+      if (typeof settings.socks5AuthUsername === 'string') socks5AuthUsername = settings.socks5AuthUsername;
+      if (typeof settings.socks5AuthPassword === 'string') socks5AuthPassword = settings.socks5AuthPassword;
+      if (settings.systemProxyEnabledByApp !== undefined) systemProxyEnabledByApp = !!settings.systemProxyEnabledByApp;
+      if (typeof settings.systemProxyServiceName === 'string') systemProxyServiceName = settings.systemProxyServiceName;
+      if (Array.isArray(settings.proxyBypassList)) proxyBypassList = settings.proxyBypassList;
+      if (Array.isArray(settings.workspaces)) workspaces = settings.workspaces;
+      if (typeof settings.activeWorkspaceId === 'string') activeWorkspaceId = settings.activeWorkspaceId;
+    }
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
+}
+```
+
+**Fields Loaded:**
+
+- `resolver` → `RESOLVER`
+- `domain` → `DOMAIN`
+- `mode` → `useTunMode` (converts "tun" to boolean)
+- `verbose` → `verboseLogging`
+- `socks5AuthEnabled` → `socks5AuthEnabled`
+- `socks5AuthUsername` → `socks5AuthUsername`
+- `socks5AuthPassword` → `socks5AuthPassword`
+- `systemProxyEnabledByApp` → `systemProxyEnabledByApp`
+- `systemProxyServiceName` → `systemProxyServiceName`
+- `proxyBypassList` → `proxyBypassList`
+- `workspaces` → `workspaces`
+- `activeWorkspaceId` → `activeWorkspaceId`
+
+### saveSettings(overrides)
+
+Saves settings to disk with optional field overrides. Updates both in-memory state and the JSON file atomically.
+
+**Location:** `main.js:118-163`
+
+<ParamField path="overrides" type="object" default="{}">
+  Optional object containing fields to override before saving. Uses nullish coalescing (`??`) to merge with current values.
+</ParamField>
+
+**Behavior:**
+
+1. Determines settings file path
+2. Merges `overrides` with current in-memory values
+3. **Updates in-memory globals first** (instant UI response)
+4. Writes merged settings to `settings.json` synchronously
+5. Logs errors but doesn't throw
+
+**Source Code:**
+
+```javascript main.js
+function saveSettings(overrides = {}) {
+  try {
+    const settingsPath = ensureSettingsFilePath();
+    const next = {
+      resolver: overrides.resolver ?? RESOLVER,
+      domain: overrides.domain ?? DOMAIN,
+      mode: overrides.mode ?? (useTunMode ? 'tun' : 'proxy'),
+      verbose: overrides.verbose ?? verboseLogging,
+      socks5AuthEnabled: overrides.socks5AuthEnabled ?? socks5AuthEnabled,
+      socks5AuthUsername: overrides.socks5AuthUsername ?? socks5AuthUsername,
+      socks5AuthPassword: overrides.socks5AuthPassword ?? socks5AuthPassword,
+      systemProxyEnabledByApp: overrides.systemProxyEnabledByApp ?? systemProxyEnabledByApp,
+      systemProxyServiceName: overrides.systemProxyServiceName ?? systemProxyServiceName,
+      proxyBypassList: overrides.proxyBypassList ?? proxyBypassList,
+      workspaces: overrides.workspaces ?? workspaces,
+      activeWorkspaceId: overrides.activeWorkspaceId ?? activeWorkspaceId
+    };
+
+    // Update in-memory state first so UI actions take effect immediately,
+    // even if the disk write fails for some reason.
+    RESOLVER = next.resolver;
+    DOMAIN = next.domain;
+    useTunMode = next.mode === 'tun';
+    verboseLogging = !!next.verbose;
+    socks5AuthEnabled = !!next.socks5AuthEnabled;
+    socks5AuthUsername = next.socks5AuthUsername || '';
+    socks5AuthPassword = next.socks5AuthPassword || '';
+    systemProxyEnabledByApp = !!next.systemProxyEnabledByApp;
+    systemProxyServiceName = next.systemProxyServiceName || '';
+    proxyBypassList = Array.isArray(next.proxyBypassList) ? next.proxyBypassList : [];
+    workspaces = Array.isArray(next.workspaces) ? next.workspaces : [];
+    activeWorkspaceId = typeof next.activeWorkspaceId === 'string' ? next.activeWorkspaceId : null;
+
+    fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2));
+  } catch (err) {
+    console.error('Failed to save settings:', err);
+  }
+}
+```
+
+**Example Usage:**
+
+```javascript
+// Save only resolver
+saveSettings({ resolver: '1.1.1.1:53' });
+
+// Save multiple fields
+saveSettings({
+  resolver: '8.8.8.8:53',
+  domain: 's.home.com',
+  verbose: true
+});
+
+// Save workspaces
+saveSettings({
+  workspaces: updatedWorkspaces,
+  activeWorkspaceId: 'workspace-123'
+});
+```
+
+## Helper Functions
+
+### getSettingsFilePath()
+
+Determines the absolute path to `settings.json` in the userData directory.
+
+**Location:** `main.js:59-70`
+
+**Returns:** String path to settings file
+
+```javascript main.js
+function getSettingsFilePath() {
+  try {
+    const dir = app.getPath('userData');
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch (_) {}
+    return path.join(dir, SETTINGS_FILE_BASENAME);
+  } catch (_) {
+    // Extremely defensive fallback (shouldn't happen in normal Electron runtime).
+    return path.join(__dirname, SETTINGS_FILE_BASENAME);
+  }
+}
+```
+
+### ensureSettingsFilePath()
+
+Lazily initializes and returns the settings file path. Caches the result in `SETTINGS_FILE` global.
+
+**Location:** `main.js:72-75`
+
+```javascript main.js
+function ensureSettingsFilePath() {
+  if (!SETTINGS_FILE) SETTINGS_FILE = getSettingsFilePath();
+  return SETTINGS_FILE;
+}
+```
+
+## Default Values
+
+Settings default to these constants defined at the top of `main.js`:
+
+```javascript main.js
+const HTTP_PROXY_PORT = 8080;
+const SOCKS5_PORT = 5201;
+const SETTINGS_FILE_BASENAME = 'settings.json';
+
+let RESOLVER = '8.8.8.8:53';
+let DOMAIN = 's.example.com';
+let useTunMode = false;
+let verboseLogging = false;
+let socks5AuthEnabled = false;
+let socks5AuthUsername = '';
+let socks5AuthPassword = '';
+let systemProxyEnabledByApp = false;
+let systemProxyServiceName = '';
+let proxyBypassList = [];
+let workspaces = [];
+let activeWorkspaceId = null;
+```
+
+## Settings Validation
+
+The `saveSettings()` function performs minimal validation:
+
+- **Type coercion:** Converts booleans using `!!`, strings using `|| ''`
+- **Array validation:** Checks `Array.isArray()` before assignment
+- **Null handling:** Converts invalid `activeWorkspaceId` to `null`
+- **No schema enforcement:** Missing fields are handled gracefully on load
+
+### Workspace Validation
+
+The `save-workspaces` IPC handler sanitizes workspace data:
+
+```javascript main.js
+const sanitized = incoming
+  .filter((ws) => ws && typeof ws.id === 'string' && typeof ws.name === 'string')
+  .map((ws) => ({
+    id: ws.id,
+    name: String(ws.name).slice(0, 64), // Max 64 chars
+    resolver: typeof ws.resolver === 'string' && ws.resolver ? ws.resolver : RESOLVER,
+    domain: typeof ws.domain === 'string' && ws.domain ? ws.domain : DOMAIN,
+    proxyBypassList: Array.isArray(ws.proxyBypassList)
+      ? ws.proxyBypassList.map((x) => String(x)).filter(Boolean)
+      : proxyBypassList
+  }));
+```
+
+**Validation rules:**
+
+- Workspace `id` and `name` must be strings
+- Workspace `name` is truncated to 64 characters
+- Missing `resolver` or `domain` fall back to global defaults
+- Invalid `proxyBypassList` entries are filtered out
+
+## Settings Migration
+
+On first launch of a packaged app, settings are migrated from the legacy location (`__dirname/settings.json`) to the userData directory:
+
+**Legacy Path (read-only in packaged apps):**
+```
+<app-directory>/settings.json
+```
+
+**New Path (writable):**
+```
+macOS: ~/Library/Application Support/SlipStream GUI/settings.json
+Windows: %APPDATA%\SlipStream GUI\settings.json
+Linux: ~/.config/SlipStream GUI/settings.json
+```
+
+**Migration Logic:**
+
+```javascript main.js
+if (!fs.existsSync(settingsPath) && fs.existsSync(LEGACY_SETTINGS_FILE)) {
+  try {
+    const legacyData = fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8');
+    fs.writeFileSync(settingsPath, legacyData);
+  } catch (err) {
+    console.warn('Settings migration skipped:', err?.message || err);
+  }
+}
+```
+
+**Why migration is needed:**
+
+Electron apps are packaged into `app.asar` archives, which are read-only. Writing to `__dirname` in packaged apps fails silently or throws errors. The userData directory is always writable across all platforms.
+
+## Workspace Management
+
+Workspaces store preset configurations for different networks or use cases:
+
+**Workspace Structure:**
+
+```typescript
+interface Workspace {
+  id: string;                  // Unique identifier (UUID)
+  name: string;                // Display name (max 64 chars)
+  resolver: string;            // DNS resolver (IP:port)
+  domain: string;              // Tunnel domain
+  proxyBypassList: string[];   // Domains to bypass
+}
+```
+
+**Active Workspace:**
+
+When a workspace is set as active via `activeWorkspaceId`, its settings override the global defaults. The UI loads workspace settings when switching between presets.
+
+**Example Workspaces Array:**
+
+```json
+[
+  {
+    "id": "home-wifi-123",
+    "name": "Home WiFi",
+    "resolver": "8.8.8.8:53",
+    "domain": "s.home.com",
+    "proxyBypassList": ["*.local", "192.168.*"]
+  },
+  {
+    "id": "work-vpn-456",
+    "name": "Work VPN",
+    "resolver": "1.1.1.1:53",
+    "domain": "s.work.com",
+    "proxyBypassList": ["*.corp.local", "intranet.*"]
+  }
+]
+```
+
+## Common Patterns
+
+### Update Single Setting
+
+```javascript
+// IPC handler pattern
+ipcMain.handle('set-verbose', (event, verbose) => {
+  verboseLogging = verbose;
+  saveSettings({ verbose });
+  return { success: true, verbose: verboseLogging };
+});
+```
+
+### Load Settings on App Start
+
+```javascript
+app.whenReady().then(() => {
+  loadSettings(); // Load first
+  createWindow(); // Then create UI
+});
+```
+
+### Atomic Updates
+
+The `saveSettings()` function updates memory first, then disk:
+
+```javascript
+// 1. Update in-memory state (instant UI feedback)
+RESOLVER = next.resolver;
+verboseLogging = !!next.verbose;
+
+// 2. Write to disk (may fail, but UI already updated)
+fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2));
+```
+
+This ensures the UI never blocks on I/O and settings changes feel instant.

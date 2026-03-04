@@ -1,0 +1,248 @@
+---
+title: "Installation"
+description: "Download and install SlipStream GUI on macOS, Windows, or Linux"
+---
+
+## System Requirements
+
+Before installing SlipStream GUI, ensure your system meets the following requirements:
+
+### Operating Systems
+
+- **macOS**: 10.13+ (High Sierra or later)
+  - Apple Silicon (M1, M2, M3) and Intel processors supported
+- **Windows**: Windows 10 or later
+  - 64-bit (x64) and 32-bit (x86) versions available
+  - Administrator privileges recommended for automatic proxy configuration
+- **Linux**: Most modern distributions
+  - AppImage works on most distributions
+  - DEB packages for Debian/Ubuntu-based systems
+
+### System Resources
+
+- **Disk Space**: Approximately 150MB free space
+- **Memory**: 256MB RAM minimum (512MB recommended)
+- **Network**: Ports 8080 and 5201 must be available
+- **Internet**: Required for initial download only
+
+<Info>
+After installation, SlipStream GUI is completely self-contained and works offline (though you'll need a SlipStream server to connect to).
+</Info>
+
+## Download Links
+
+### Latest Release
+
+Download the latest version of SlipStream GUI for your platform:
+
+<div align="center">
+  <a href="https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest">
+    <img src="https://img.shields.io/github/v/release/mirzaaghazadeh/SlipStreamGUI?style=for-the-badge&label=Latest%20Version&sort=semver" alt="Latest Version" />
+  </a>
+</div>
+
+### Direct Downloads
+
+| Platform | Download Link |
+|----------|---------------|
+| **macOS (Apple Silicon)** | [SlipStream-GUI-macOS-ARM64.dmg](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-macOS-ARM64.dmg) |
+| **macOS (Intel)** | [SlipStream-GUI-macOS-Intel.dmg](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-macOS-Intel.dmg) |
+| **Windows (64-bit) Installer** | [SlipStream-GUI-Windows-x64.exe](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Windows-x64.exe) |
+| **Windows (64-bit) Portable** | [SlipStream-GUI-Windows-x64-Portable.exe](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Windows-x64-Portable.exe) |
+| **Windows (32-bit) Installer** | [SlipStream-GUI-Windows-x86.exe](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Windows-x86.exe) |
+| **Windows (32-bit) Portable** | [SlipStream-GUI-Windows-x86-Portable.exe](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Windows-x86-Portable.exe) |
+| **Linux (x86_64) AppImage** | [SlipStream-GUI-Linux-x64.AppImage](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Linux-x64.AppImage) |
+| **Linux (x86_64) DEB** | [SlipStream-GUI-Linux-x64.deb](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest/download/SlipStream-GUI-Linux-x64.deb) |
+
+<Note>
+If a direct download fails, visit the [Releases page](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest) to download manually.
+</Note>
+
+## Installation Instructions
+
+### macOS Installation
+
+1. **Download** the appropriate DMG file for your Mac:
+   - Apple Silicon (M1/M2/M3): Download `SlipStream-GUI-macOS-ARM64.dmg`
+   - Intel processor: Download `SlipStream-GUI-macOS-Intel.dmg`
+
+2. **Open** the downloaded DMG file by double-clicking it
+
+3. **Drag** the SlipStream GUI app to your Applications folder
+
+4. **Launch** the app from Applications or Spotlight
+
+<Warning>
+If you see "SlipStream GUI is damaged and can't be opened", see the [Troubleshooting section](#macos-gatekeeper-error) below.
+</Warning>
+
+### Windows Installation
+
+#### Standard Installation (Recommended)
+
+1. **Download** the installer for your system:
+   - 64-bit Windows: `SlipStream-GUI-Windows-x64.exe`
+   - 32-bit Windows: `SlipStream-GUI-Windows-x86.exe`
+
+2. **Run** the installer by double-clicking the downloaded file
+
+3. **Choose** your installation location (or keep the default)
+
+4. **Complete** the installation wizard
+
+5. **Launch** SlipStream GUI from the Start Menu or desktop shortcut
+
+#### Portable Installation
+
+For a no-installation option:
+
+1. **Download** the portable version:
+   - 64-bit: `SlipStream-GUI-Windows-x64-Portable.exe`
+   - 32-bit: `SlipStream-GUI-Windows-x86-Portable.exe`
+
+2. **Move** the executable to your desired location
+
+3. **Run** the executable directly - no installation required
+
+<Info>
+The portable version stores all settings in the same directory as the executable, making it perfect for USB drives or portable storage.
+</Info>
+
+### Linux Installation
+
+#### AppImage (Universal)
+
+1. **Download** `SlipStream-GUI-Linux-x64.AppImage`
+
+2. **Make it executable**:
+   ```bash
+   chmod +x SlipStream-GUI-Linux-x64.AppImage
+   ```
+
+3. **Run** the AppImage:
+   ```bash
+   ./SlipStream-GUI-Linux-x64.AppImage
+   ```
+
+<Note>
+AppImages work on most Linux distributions without installation. You can move the file anywhere and run it directly.
+</Note>
+
+#### DEB Package (Debian/Ubuntu)
+
+1. **Download** `SlipStream-GUI-Linux-x64.deb`
+
+2. **Install** using your package manager:
+
+   **Using dpkg:**
+   ```bash
+   sudo dpkg -i SlipStream-GUI-Linux-x64.deb
+   sudo apt-get install -f  # Install any missing dependencies
+   ```
+
+   **Using apt:**
+   ```bash
+   sudo apt install ./SlipStream-GUI-Linux-x64.deb
+   ```
+
+3. **Launch** from your application menu or run:
+   ```bash
+   slipstream-gui
+   ```
+
+## Post-Installation Steps
+
+After installing SlipStream GUI:
+
+1. **Launch the application** for the first time
+
+2. **Review default settings** in the configuration panel:
+   - DNS Resolver: `8.8.8.8:53` (default)
+   - Domain: `s.example.com` (default - you'll need to change this)
+   - System Proxy: Enabled (recommended)
+
+3. **Configure your SlipStream server domain** (see [Quickstart guide](/quickstart))
+
+4. **Test the connection** using the built-in connection tester
+
+<Warning>
+The default domain `s.example.com` is just a placeholder. You must configure your own SlipStream server domain before connecting.
+</Warning>
+
+## Troubleshooting Installation Issues
+
+### macOS: Gatekeeper Error
+
+If you see **"SlipStream GUI is damaged and can't be opened"** on macOS:
+
+**Option 1: Remove quarantine attribute (Recommended)**
+```bash
+xattr -cr /Applications/SlipStream\ GUI.app
+```
+
+Then try opening the app again.
+
+**Option 2: Allow in System Settings**
+1. Go to **System Settings** → **Privacy & Security**
+2. Scroll to the **Security** section
+3. Click **"Open Anyway"** next to the SlipStream GUI message
+4. Confirm by clicking **"Open"**
+
+**Option 3: Right-click to open**
+1. Right-click (or Control-click) on the app
+2. Select **"Open"** from the context menu
+3. Click **"Open"** in the confirmation dialog
+
+### Windows: Administrator Required
+
+For automatic system proxy configuration, run as Administrator:
+
+**One-time:**
+1. Right-click SlipStream GUI
+2. Select **"Run as administrator"**
+3. Click **"Yes"** in the UAC prompt
+
+**Always run as administrator:**
+1. Right-click the shortcut
+2. Select **"Properties"**
+3. Go to **"Compatibility"** tab
+4. Check **"Run this program as an administrator"**
+5. Click **"OK"**
+
+### Linux: Permission Denied
+
+If the AppImage won't run:
+
+```bash
+chmod +x SlipStream-GUI-Linux-x64.AppImage
+```
+
+### Ports Already in Use
+
+If ports 8080 or 5201 are already in use:
+
+**Check what's using the ports:**
+
+**macOS/Linux:**
+```bash
+lsof -i :8080
+lsof -i :5201
+```
+
+**Windows:**
+```cmd
+netstat -ano | findstr :8080
+netstat -ano | findstr :5201
+```
+
+You'll need to stop the conflicting service or close the application using these ports.
+
+### Firewall Blocking Connection
+
+Ensure your firewall allows:
+- Outbound connections on all ports
+- Inbound connections on port 8080 (if sharing with mobile devices)
+
+## Next Steps
+
+Now that SlipStream GUI is installed, continue to the [Quickstart guide](/quickstart) to configure and connect to your SlipStream server.

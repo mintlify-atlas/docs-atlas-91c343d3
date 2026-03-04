@@ -1,0 +1,253 @@
+---
+title: "Common issues"
+description: "Solutions for common SlipStream GUI problems"
+---
+
+## VPN won't start
+
+If the VPN fails to start, check these common causes:
+
+<AccordionGroup>
+  <Accordion title="Ports 8080 or 5201 already in use">
+    SlipStream GUI requires ports 8080 (HTTP proxy) and 5201 (SOCKS5) to be available.
+
+    **Check if ports are in use:**
+
+    ```bash macOS/Linux
+    lsof -i :8080
+    lsof -i :5201
+    ```
+
+    ```powershell Windows
+    netstat -ano | findstr :8080
+    netstat -ano | findstr :5201
+    ```
+
+    **Kill processes using the ports:**
+
+    ```bash macOS/Linux
+    lsof -ti:8080 | xargs kill -9
+    lsof -ti:5201 | xargs kill -9
+    ```
+
+    ```powershell Windows (Admin)
+    # Find PID from netstat output above, then:
+    taskkill /PID <PID> /F
+    ```
+
+    <Note>The app will automatically attempt to kill the process on port 5201 if it detects "Address already in use" errors.</Note>
+  </Accordion>
+
+  <Accordion title="Binary not found or missing">
+    The SlipStream client binary might be missing or quarantined.
+
+    **Expected locations:**
+    - macOS: `binaries/slipstream-client-mac-arm64` or `slipstream-client-mac-intel`
+    - Windows: `binaries/slipstream-client-win.exe`
+    - Linux: `binaries/slipstream-client-linux`
+
+    **Solutions:**
+    - Reinstall the application from the [latest release](https://github.com/mirzaaghazadeh/SlipStreamGUI/releases/latest)
+    - Check if antivirus quarantined the binary (especially on Windows)
+    - Ensure the binary has execute permissions (macOS/Linux)
+  </Accordion>
+
+  <Accordion title="Invalid DNS resolver or domain">
+    Verify your configuration settings:
+
+    - **DNS Resolver**: Must be in format `IP:PORT` (e.g., `8.8.8.8:53`)
+    - **Domain**: Your SlipStream server domain (e.g., `s.example.com`)
+
+    **Test your DNS resolver:**
+    1. Click **"DNS Checker"** in the app
+    2. Enter a test domain (e.g., `google.com`)
+    3. Test your DNS servers
+    4. Click **"Use"** on any **OK** result to apply it
+  </Accordion>
+</AccordionGroup>
+
+## System proxy not working
+
+<AccordionGroup>
+  <Accordion title="System proxy toggle has no effect">
+    The HTTP proxy runs on `127.0.0.1:8080` regardless of system proxy configuration.
+
+    **Manual configuration:**
+    - **Proxy address**: `127.0.0.1`
+    - **Port**: `8080`
+    - **Bypass**: Add local addresses if needed
+
+    **Platform-specific requirements:**
+    - **macOS**: May prompt for administrator password
+    - **Windows**: Run as Administrator for automatic configuration
+    - **Linux**: System proxy works with GNOME (gsettings); other DEs may need manual setup
+  </Accordion>
+
+  <Accordion title="Some applications bypass the proxy">
+    Not all applications respect system proxy settings.
+
+    **Solutions:**
+    - Configure individual apps to use proxy `127.0.0.1:8080`
+    - Use the **Proxy Bypass List** to exclude specific domains/IPs
+    - Some apps (like terminal tools) need environment variables:
+      ```bash
+      export http_proxy=http://127.0.0.1:8080
+      export https_proxy=http://127.0.0.1:8080
+      ```
+  </Accordion>
+
+  <Accordion title="Proxy settings persist after stopping VPN">
+    If system proxy remains configured after stopping:
+
+    **macOS:**
+    ```bash
+    networksetup -setwebproxystate "Wi-Fi" off
+    networksetup -setsecurewebproxystate "Wi-Fi" off
+    ```
+
+    **Windows (Admin):**
+    ```powershell
+    netsh winhttp reset proxy
+    ```
+
+    **Linux (GNOME):**
+    ```bash
+    gsettings set org.gnome.system.proxy mode 'none'
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Connection issues
+
+<AccordionGroup>
+  <Accordion title="Test proxy connection fails">
+    Use the built-in connection tester to diagnose issues.
+
+    **Common errors:**
+
+    | Error | Solution |
+    |-------|----------|
+    | Connection refused | VPN not running - click "Start VPN" |
+    | Timeout | Check DNS resolver and domain settings |
+    | HTTP 500 | SOCKS5 connection failed - check SlipStream server |
+    | Invalid response | Proxy or server misconfiguration |
+
+    **Manual test:**
+    ```bash
+    curl -x http://127.0.0.1:8080 http://httpbin.org/ip
+    ```
+  </Accordion>
+
+  <Accordion title="DNS resolution failures">
+    If you see "Path for resolver became unavailable" or "Connection closed, reconnecting":
+
+    <Note>These messages are normal during reconnection attempts and appear as logs, not errors.</Note>
+
+    **To fix persistent DNS issues:**
+    1. Use the **DNS Checker** to test multiple DNS servers
+    2. Select a working DNS server and click **"Use"**
+    3. Common reliable DNS servers:
+       - Google: `8.8.8.8:53`
+       - Cloudflare: `1.1.1.1:53`
+       - Quad9: `9.9.9.9:53`
+  </Accordion>
+
+  <Accordion title="Connection drops or unstable">
+    Check the Logs panel for specific errors:
+
+    - **ECONNRESET / EPIPE / ETIMEDOUT**: Normal socket errors under load, app will continue
+    - **Address already in use**: Port conflict (see "Ports already in use" above)
+    - **SlipStream process exited**: Check server configuration and connectivity
+  </Accordion>
+</AccordionGroup>
+
+## Enable verbose logging
+
+Verbose logging shows detailed connection information for debugging:
+
+1. Toggle **"Verbose Logging"** in the app interface
+2. Restart the VPN to capture full startup logs
+3. Check the **Logs** panel for detailed output
+
+**What verbose logging shows:**
+- Individual HTTP/HTTPS requests with request IDs
+- SOCKS5 connection establishment
+- Tunnel creation and lifecycle events
+- Socket operations and closures
+
+<Warning>Verbose logging can be very noisy. Disable it for normal use to reduce log clutter.</Warning>
+
+## Testing your connection
+
+### Built-in test
+
+1. Click **"Test Proxy Connection"** in the app
+2. Wait for the result (tests `httpbin.org/ip`)
+3. Success shows your exit IP and response time
+
+### Manual testing
+
+**Test HTTP proxy:**
+```bash
+curl -x http://127.0.0.1:8080 http://httpbin.org/ip
+```
+
+**Test HTTPS:**
+```bash
+curl -x http://127.0.0.1:8080 https://httpbin.org/ip
+```
+
+**Check your exit IP:**
+```bash
+curl -x http://127.0.0.1:8080 https://api.ipify.org
+```
+
+**Test with browser:**
+1. Configure browser to use proxy `127.0.0.1:8080`
+2. Visit [https://www.whatismyip.com](https://www.whatismyip.com)
+3. Verify the IP matches your SlipStream server location
+
+## Logs showing errors
+
+<AccordionGroup>
+  <Accordion title="How to interpret log messages">
+    **Normal messages (not errors):**
+    - `Path for resolver ... became unavailable` - Temporary connection loss, will reconnect
+    - `Connection closed, reconnecting` - Normal reconnection process
+    - Socket errors (ECONNRESET, EPIPE, ETIMEDOUT) - Expected under load
+
+    **Actual errors requiring action:**
+    - `Address already in use` - Port conflict, kill conflicting process
+    - `SlipStream client binary not found` - Missing or quarantined binary
+    - `SlipStream failed to start: ENOENT` - Binary not found or not executable
+    - `HTTP 500` - Server error, check SlipStream server configuration
+  </Accordion>
+
+  <Accordion title="Reading log request IDs">
+    Each request is tagged with a unique ID for tracking:
+
+    ```
+    [1735891234567-abc123] 🔒 CONNECT example.com:443 (HTTPS)
+    [1735891234567-abc123] ✅ SOCKS5 connected to example.com:443
+    [1735891234567-abc123] 🔗 Tunnel active: example.com:443
+    ```
+
+    Use the request ID to trace a specific connection from start to finish.
+  </Accordion>
+</AccordionGroup>
+
+## Need more help?
+
+If these solutions don't resolve your issue:
+
+1. Check platform-specific troubleshooting:
+   - [macOS troubleshooting](/troubleshooting/macos)
+   - [Windows troubleshooting](/troubleshooting/windows)
+   - [Linux troubleshooting](/troubleshooting/linux)
+
+2. Review the [GitHub Issues](https://github.com/mirzaaghazadeh/SlipStreamGUI/issues) for similar problems
+
+3. Open a new issue with:
+   - Your platform and version
+   - Error messages from logs
+   - Steps to reproduce the issue

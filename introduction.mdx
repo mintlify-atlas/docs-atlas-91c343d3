@@ -1,0 +1,92 @@
+---
+title: "Introduction"
+description: "A modern, cross-platform GUI client for SlipStream VPN that provides secure, system-wide tunneling through an HTTP proxy interface"
+---
+
+## What is SlipStream GUI?
+
+SlipStream GUI is a modern, cross-platform desktop application that provides a user-friendly interface for connecting to SlipStream VPN servers. It creates secure, system-wide tunneling through an HTTP proxy interface, allowing you to route all your internet traffic through an encrypted VPN connection.
+
+Built with Electron and Node.js, SlipStream GUI works seamlessly across macOS, Windows, and Linux platforms, offering a consistent experience regardless of your operating system.
+
+## Key Features
+
+SlipStream GUI offers a comprehensive set of features designed for both ease of use and advanced functionality:
+
+- **Cross-Platform Support**: Native support for macOS (Apple Silicon and Intel), Windows (64-bit and 32-bit), and Linux
+- **System-Wide VPN**: Routes all traffic through SlipStream VPN automatically
+- **Modern GUI**: Intuitive interface with real-time status monitoring and logs
+- **Auto-Configuration**: Automatically configures system proxy settings for seamless operation
+- **Proxy Bypass List**: Exclude specific domains or addresses from the proxy (split tunneling)
+- **Self-Contained**: All dependencies bundled - no internet required after installation
+- **Portable Mode**: Windows portable version available with no installation required
+- **Verbose Logging**: Optional detailed logging for debugging and troubleshooting
+- **Connection Testing**: Built-in proxy connection tester to verify functionality
+- **Real-Time Status**: Monitor VPN connection status at a glance
+- **Concurrent DNS Checker**: Test many DNS servers at once and apply any working result with one click
+
+<Note>
+SlipStream GUI requires a SlipStream server to connect to. You can deploy your own server using the [slipstream-rust-deploy](https://github.com/AliRezaBeigy/slipstream-rust-deploy) tool.
+</Note>
+
+## How It Works
+
+SlipStream GUI creates a multi-layer proxy architecture to route your traffic securely:
+
+```
+Your Applications
+    ↓ HTTP/HTTPS
+HTTP Proxy Server (127.0.0.1:8080)
+    ↓ SOCKS5 Protocol
+SOCKS5 Client (127.0.0.1:5201)
+    ↓ Encrypted Tunnel
+SlipStream VPN Server
+```
+
+### Architecture Overview
+
+The application consists of three main components:
+
+1. **SlipStream Client**: Runs the native binary that establishes a SOCKS5 proxy on port 5201, creating an encrypted tunnel to your SlipStream server
+
+2. **HTTP Proxy Server**: A Node.js server listening on port 8080 that converts HTTP/HTTPS requests to SOCKS5 protocol
+
+3. **System Proxy Configuration**: Automatically configures your operating system's proxy settings to route all traffic through the VPN
+
+This architecture ensures that all applications on your system can benefit from the VPN connection without requiring individual configuration.
+
+<Info>
+The HTTP proxy runs on port **8080** and the SOCKS5 proxy runs on port **5201**. Make sure these ports are available on your system.
+</Info>
+
+## Who Should Use It?
+
+SlipStream GUI is ideal for:
+
+- **Privacy-conscious users** who want to secure their internet connection
+- **Developers** who need to test applications with different network configurations
+- **Remote workers** who require secure access to resources
+- **Users in restricted networks** who need reliable connectivity
+- **Anyone** looking for an easy-to-use VPN solution with full control over their server
+
+### Technical Requirements
+
+Before installing SlipStream GUI, ensure your system meets these requirements:
+
+- **macOS**: 10.13+ (High Sierra or later)
+- **Windows**: Windows 10 or later
+- **Linux**: Most modern distributions (Ubuntu, Debian, Fedora, etc.)
+- **Ports**: 8080 and 5201 must be available
+- **Disk Space**: Approximately 150MB for installation
+
+<Warning>
+On Windows, you may need to run the application as Administrator for automatic system proxy configuration to work properly.
+</Warning>
+
+## Get Started
+
+Ready to set up SlipStream GUI? Check out our [Quickstart guide](/quickstart) to get up and running in minutes, or visit the [Installation page](/installation) for detailed platform-specific instructions.
+
+## Open Source
+
+SlipStream GUI is open source and available on [GitHub](https://github.com/mirzaaghazadeh/SlipStreamGUI) under the MIT License. Contributions are welcome!

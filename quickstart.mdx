@@ -1,80 +1,298 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get up and running with SlipStream GUI in minutes"
 ---
 
-## Get started in three steps
-
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This guide will help you set up and connect to SlipStream VPN in just a few minutes.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Before starting, ensure you have:
+- Installed SlipStream GUI (see [Installation guide](/installation))
+- A SlipStream server running (or access to one)
+- Your server's domain name
 </Note>
+
+## Quick Setup
+
+<Steps>
+
+<Step title="Download and Install">
+
+If you haven't already, download and install SlipStream GUI for your platform:
+
+- **macOS**: Download the appropriate DMG (ARM64 for Apple Silicon, Intel for older Macs)
+- **Windows**: Download the installer (x64 for 64-bit, x86 for 32-bit) or portable version
+- **Linux**: Download the AppImage (universal) or DEB package (Debian/Ubuntu)
+
+See the [Installation guide](/installation) for detailed instructions.
+
+<Warning>
+On macOS, if you see a "damaged" error, run this command in Terminal:
+```bash
+xattr -cr /Applications/SlipStream\ GUI.app
+```
+</Warning>
+
+</Step>
+
+<Step title="Launch and Configure">
+
+Launch SlipStream GUI and configure your connection settings:
+
+### Configure Server Domain
+
+1. In the main window, locate the **Domain** field
+2. Replace the default `s.example.com` with your SlipStream server domain
+3. Example: `vpn.yourdomain.com`
+
+### Configure DNS Resolver
+
+1. Locate the **DNS Resolver** field
+2. Enter your DNS server address with port
+3. Default: `8.8.8.8:53` (Google DNS)
+4. If using your own server, use: `YOUR_SERVER_IP:53`
+
+### Enable System Proxy (Recommended)
+
+1. Toggle **"Configure System Proxy"** to ON
+2. This automatically routes all system traffic through the VPN
+3. On Windows, you may be prompted for Administrator access
+4. On macOS, you may need to enter your password
+
+<Info>
+The **System Proxy** toggle ensures all applications on your system use the VPN connection automatically. Leave it enabled unless you want to manually configure individual apps.
+</Info>
+
+### Optional: Configure Proxy Bypass List
+
+To exclude specific domains from the VPN (split tunneling):
+
+1. Click **"Proxy Bypass List"** (if available)
+2. Add domains or IP addresses, one per line:
+   ```
+   *.google.com
+   192.168.1.0/24
+   localhost
+   ```
+3. These addresses will bypass the proxy and use your direct connection
+
+</Step>
+
+<Step title="Use DNS Checker (Optional but Recommended)">
+
+If you're unsure which DNS server to use, SlipStream GUI includes a built-in DNS checker:
+
+### How to Use DNS Checker
+
+1. Click the **"DNS Checker"** button in the main window
+
+2. **Enter a test domain**:
+   - Example: `google.com`
+   - This domain will be used to test DNS resolution
+
+3. **Enter DNS server IPs to test**:
+   - You can paste a large list (up to 100 servers)
+   - Each IP should be on a separate line
+   - Common public DNS servers:
+     ```
+     8.8.8.8
+     1.1.1.1
+     208.67.222.222
+     ```
+
+4. **Run the test**:
+   - The checker tests all servers in parallel
+   - Results are categorized as **OK** or **Failed**
+
+5. **Apply a working DNS server**:
+   - Click **"Use"** on any row marked **OK**
+   - The app will automatically set your DNS Resolver
+   - Port 53 is automatically added
+
+<Note>
+The DNS Checker tests up to **100 servers concurrently**, making it fast even with large lists.
+</Note>
+
+</Step>
+
+<Step title="Start VPN">
+
+Once your settings are configured:
+
+1. Click the **"Start VPN"** button in the main window
+
+2. **Wait for connection**:
+   - Watch the status indicators change
+   - Both should show **"Running"** when connected:
+     - SlipStream Client: Running
+     - HTTP Proxy: Running
+
+3. **Monitor the connection**:
+   - Check the **Status Panel** for real-time connection status
+   - The **Logs Panel** shows connection activity
+
+<Info>
+The connection typically takes 5-10 seconds to establish. If it takes longer, check the logs for error messages.
+</Info>
+
+### Understanding the Status Indicators
+
+- **SlipStream Client (Port 5201)**: The SOCKS5 proxy that connects to your server
+- **HTTP Proxy (Port 8080)**: The local HTTP proxy that routes your traffic
+
+Both must show "Running" for the VPN to work correctly.
+
+</Step>
+
+<Step title="Test Connection">
+
+Verify that your VPN connection is working:
+
+### Using Built-in Connection Tester
+
+1. Click **"Test Proxy Connection"** button
+2. The app will verify the proxy is working
+3. Check the logs for test results
+
+### Manual Testing
+
+1. **Check your IP address**:
+   - Visit [whatismyip.com](https://www.whatismyip.com)
+   - Your IP should match your VPN server's location
+
+2. **Test a website**:
+   - Open any website in your browser
+   - It should load through the VPN
+
+3. **Check the logs**:
+   - Enable **"Verbose Logging"** for detailed information
+   - Watch for successful connection messages
+
+<Warning>
+If websites aren't loading:
+- Check that both status indicators show "Running"
+- Verify your server domain is correct
+- Check the logs for error messages
+- Try the connection tester
+</Warning>
+
+### Enable Verbose Logging
+
+For detailed troubleshooting information:
+
+1. Toggle **"Verbose Logging"** to ON
+2. Watch the logs panel for detailed connection information
+3. Look for error messages or connection issues
+
+</Step>
+
+</Steps>
+
+## Sharing VPN with Mobile Devices
+
+You can share your PC's VPN connection with mobile devices on the same Wi-Fi network:
+
+### Prerequisites
+- PC and mobile device must be on the same Wi-Fi network
+- SlipStream GUI must be running with VPN started
+- Firewall must allow incoming connections on port 8080
+
+### Find Your PC's IP Address
+
+**macOS/Linux:**
+```bash
+ifconfig | grep "inet " | grep -v 127.0.0.1
+```
+
+**Windows:**
+```cmd
+ipconfig
+```
+
+Look for an address like `192.168.1.XXX` or `10.0.0.XXX`.
+
+### Configure iOS Device
+
+1. Go to **Settings** → **Wi-Fi**
+2. Tap **(i)** next to your connected network
+3. Scroll to **"HTTP Proxy"** section
+4. Select **"Manual"**
+5. Enter your PC's IP in **"Server"** (e.g., `192.168.1.100`)
+6. Enter **"8080"** in **"Port"**
+7. Tap **"Save"**
+
+### Configure Android Device
+
+1. Go to **Settings** → **Wi-Fi**
+2. Long-press your connected network
+3. Select **"Modify network"** or **"Network details"**
+4. Tap **"Advanced options"**
+5. Under **"Proxy"**, select **"Manual"**
+6. Enter your PC's IP in **"Proxy hostname"** (e.g., `192.168.1.100`)
+7. Enter **"8080"** in **"Proxy port"**
+8. Tap **"Save"**
+
+<Info>
+Your mobile device will now route all traffic through your PC's VPN connection using the HTTP proxy on port **8080**.
+</Info>
+
+## Setting Up a SlipStream Server
+
+If you don't have a SlipStream server yet, you can deploy your own using the **slipstream-rust-deploy** tool:
+
+### Quick Server Setup
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/AliRezaBeigy/slipstream-rust-deploy/master/slipstream-rust-deploy.sh)
+```
+
+### What You'll Need
+
+- A Linux server (Fedora, Rocky, CentOS, Debian, or Ubuntu)
+- A domain name with DNS access
+- Root or sudo access on the server
+
+### After Server Setup
+
+1. Configure your DNS records (follow the deployment guide)
+2. Wait for DNS propagation (up to 24 hours)
+3. In SlipStream GUI, enter your server domain
+4. Enter your DNS resolver (e.g., `YOUR_SERVER_IP:53`)
+5. Click "Start VPN" to connect
+
+For detailed instructions, visit [slipstream-rust-deploy](https://github.com/AliRezaBeigy/slipstream-rust-deploy).
+
+## Troubleshooting
+
+### VPN Won't Start
+
+- **Check ports**: Ensure ports 8080 and 5201 are not in use
+- **Verify settings**: Check your DNS resolver and domain settings
+- **Check logs**: Look for error messages in the logs panel
+- **Windows**: Try running as Administrator
+
+### System Proxy Not Working
+
+- Ensure **"Configure System Proxy"** toggle is enabled
+- On macOS, you may be prompted for administrator password
+- On Windows, run the app as Administrator
+- Some apps may bypass system proxy (configure them manually)
+
+### Connection Issues
+
+- Use the **"Test Proxy Connection"** button
+- Enable **"Verbose Logging"** for detailed information
+- Verify your SlipStream server is running
+- Check that your server domain is correct
+- Try using the DNS Checker to find a working DNS server
+
+## Next Steps
+
+Now that you're connected, explore more features:
+
+- **Proxy Bypass List**: Configure split tunneling for specific domains
+- **DNS Checker**: Test and find the best DNS servers
+- **Verbose Logging**: Enable detailed logging for troubleshooting
+- **Mobile Sharing**: Share your VPN with mobile devices on the same network
+
+For technical details about how SlipStream GUI works, see the [Architecture documentation](/architecture/overview).

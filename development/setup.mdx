@@ -1,0 +1,247 @@
+---
+title: Development setup
+description: Set up your development environment for SlipStream GUI
+---
+
+This guide walks you through setting up your local development environment for SlipStream GUI.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js 16+** (18+ recommended)
+  - Download from [nodejs.org](https://nodejs.org/)
+  - Verify installation: `node --version`
+
+- **npm** (comes with Node.js)
+  - Verify installation: `npm --version`
+
+- **Git**
+  - Download from [git-scm.com](https://git-scm.com/)
+  - Verify installation: `git --version`
+
+### Platform-specific requirements
+
+<Tabs>
+  <Tab title="macOS">
+    Install Xcode Command Line Tools:
+    ```bash
+    xcode-select --install
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    No additional requirements for development. For building, Windows SDK is recommended.
+  </Tab>
+  
+  <Tab title="Linux">
+    Install build essentials:
+    ```bash
+    # Debian/Ubuntu
+    sudo apt-get install build-essential
+    
+    # Fedora/RHEL
+    sudo dnf groupinstall "Development Tools"
+    ```
+  </Tab>
+</Tabs>
+
+## Setup steps
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the SlipStream GUI repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/mirzaaghazadeh/SlipStreamGUI.git
+    cd SlipStreamGUI
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    Install all required npm packages:
+    
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+    </CodeGroup>
+    
+    This will install:
+    - Electron runtime
+    - electron-builder
+    - All Node.js dependencies (http-proxy, socks, socks-proxy-agent, ip)
+  </Step>
+  
+  <Step title="Download SlipStream client binaries">
+    Download the latest SlipStream client binaries from the upstream repository:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run download:binaries
+    ```
+    </CodeGroup>
+    
+    This script downloads platform-specific binaries into the `binaries/` directory:
+    - `slipstream-client-mac-arm64` (macOS Apple Silicon)
+    - `slipstream-client-mac-intel` (macOS Intel)
+    - `slipstream-client-win.exe` (Windows)
+    - `slipstream-client-linux` (Linux)
+    
+    <Tip>
+      You can download binaries for specific platforms using:
+      
+      ```bash
+      # macOS only
+      npm run download:binaries -- --platform mac
+      
+      # Windows only
+      npm run download:binaries -- --platform win
+      
+      # Linux only
+      npm run download:binaries -- --platform linux
+      
+      # macOS ARM64 only
+      npm run download:binaries -- --platform mac --arch arm64
+      ```
+    </Tip>
+  </Step>
+  
+  <Step title="Run in development mode">
+    Start the application in development mode:
+    
+    <CodeGroup>
+    ```bash npm
+    npm start
+    ```
+    </CodeGroup>
+    
+    This launches Electron with the current source code. The app will open with full functionality.
+  </Step>
+</Steps>
+
+## Project structure
+
+After setup, your project directory will look like this:
+
+```
+SlipStream-GUI/
+├── assets/              # App icons and images
+│   └── icon.png
+├── binaries/           # Downloaded SlipStream client binaries
+│   ├── slipstream-client-mac-arm64
+│   ├── slipstream-client-mac-intel
+│   ├── slipstream-client-win.exe
+│   └── slipstream-client-linux
+├── node_modules/       # npm dependencies (created after npm install)
+├── scripts/            # Build and utility scripts
+│   ├── download-binaries.js
+│   └── verify-binaries.js
+├── main.js            # Electron main process
+├── index.html         # UI and renderer process
+├── check-system-proxy.js  # System proxy status checker
+├── package.json       # Dependencies and build configuration
+├── package-lock.json  # Dependency lock file
+├── settings.json      # User settings (created at runtime)
+└── README.md          # Project documentation
+```
+
+## Key files explained
+
+### main.js
+
+The Electron main process file that handles:
+- Application window creation and management
+- SlipStream client process spawning and management
+- HTTP proxy server (port 8080)
+- System proxy configuration
+- IPC communication between main and renderer processes
+
+### index.html
+
+The renderer process containing:
+- User interface HTML structure
+- CSS styling
+- JavaScript for UI interactions
+- Settings management
+- Real-time status monitoring
+- Log display
+
+### package.json
+
+Contains:
+- Project metadata
+- Dependencies (runtime and dev)
+- npm scripts for development and building
+- electron-builder configuration
+
+## Utility scripts
+
+The project includes helpful npm scripts:
+
+<CodeGroup>
+```bash Start development
+npm start
+```
+
+```bash Download binaries
+npm run download:binaries
+```
+
+```bash Verify binaries
+npm run verify:binaries
+```
+
+```bash Clean binaries
+npm run clean:binaries
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Missing binaries error
+
+If you get an error about missing binaries when running the app:
+
+1. Make sure you ran `npm run download:binaries`
+2. Check that the `binaries/` directory exists and contains the required files
+3. For development on macOS, ensure execute permissions:
+   ```bash
+   chmod +x binaries/slipstream-client-mac-*
+   ```
+
+### Port already in use
+
+If ports 8080 or 5201 are already in use:
+
+1. Stop any running instances of SlipStream GUI
+2. Check for other applications using these ports:
+   ```bash
+   # macOS/Linux
+   lsof -i :8080
+   lsof -i :5201
+   
+   # Windows
+   netstat -ano | findstr :8080
+   netstat -ano | findstr :5201
+   ```
+
+### npm install fails
+
+If `npm install` fails:
+
+1. Ensure you have Node.js 16+ installed
+2. Try clearing npm cache: `npm cache clean --force`
+3. Delete `node_modules/` and `package-lock.json`, then run `npm install` again
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Building" icon="hammer" href="/development/building">
+    Learn how to build the application for distribution
+  </Card>
+  
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Read the contribution guidelines
+  </Card>
+</CardGroup>

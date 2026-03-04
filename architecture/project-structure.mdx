@@ -1,0 +1,453 @@
+---
+title: Project structure
+description: Understanding the SlipStream GUI codebase organization and key files
+---
+
+This guide provides a comprehensive overview of the SlipStream GUI project structure, helping developers navigate the codebase and understand where different functionality lives.
+
+## Directory Layout
+
+```
+SlipStream-GUI/
+├── .github/                    # GitHub templates and workflows
+│   ├── ISSUE_TEMPLATE/        # Issue templates
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   └── pull_request_template.md
+├── assets/                     # Static assets
+│   └── icon.png               # Application icon (1024x1024 PNG)
+├── binaries/                   # Native SlipStream client binaries
+│   ├── slipstream-client-mac-arm64   # macOS (Apple Silicon)
+│   ├── slipstream-client-mac-intel   # macOS (Intel)
+│   ├── slipstream-client-linux       # Linux
+│   └── slipstream-client-win.exe     # Windows
+├── main.js                     # Electron main process
+├── index.html                  # UI and renderer process
+├── check-system-proxy.js       # System proxy status checker
+├── tun-manager.js              # TUN interface manager (legacy)
+├── package.json                # Dependencies and build configuration
+├── .gitignore                  # Git ignore rules
+├── .npmrc                      # npm configuration
+├── LICENSE                     # MIT License
+├── README.md                   # Main documentation
+├── BUILD.md                    # Detailed build instructions
+├── CONTRIBUTING.md             # Contribution guidelines
+├── PROJECT_STRUCTURE.md        # Project structure documentation
+├── intro.png                   # Intro modal image
+└── dist/                       # Build output (not in git)
+```
+
+## Core Application Files
+
+### main.js
+
+**Location**: `/main.js` (root directory)
+
+**Purpose**: Electron main process - the Node.js backend of the application
+
+**Key Responsibilities**:
+
+<AccordionGroup>
+  <Accordion title="Window Management" icon="window">
+    - Creates and manages the main BrowserWindow
+    - Handles window lifecycle events (closed, destroyed)
+    - Sets application icon and dock icon (macOS)
+    - Configures window size, resizing, and web preferences
+    
+    See `main.js:192-238` for window creation logic.
+  </Accordion>
+  
+  <Accordion title="IPC Handlers" icon="exchange">
+    - Registers IPC event listeners for renderer communication
+    - Handles commands: start-vpn, stop-vpn, save-settings
+    - Sends status updates and logs to renderer
+    - Manages bidirectional communication channel
+    
+    IPC handlers are registered throughout main.js using `ipcMain.handle()` and `ipcMain.on()`.
+  </Accordion>
+  
+  <Accordion title="SlipStream Client Management" icon="terminal">
+    - Spawns native binary as child process
+    - Platform-specific binary path resolution
+    - Monitors stdout/stderr for logs and errors
+    - Handles process exit and cleanup
+    - Automatic execute permission setting (Unix)
+    
+    See `main.js:240-398` for process management.
+  </Accordion>
+  
+  <Accordion title="HTTP Proxy Server" icon="server">
+    - Implements HTTP/HTTPS proxy on port 8080
+    - Handles CONNECT method for HTTPS tunneling
+    - Routes requests through SOCKS5 client
+    - Request/response logging and error handling
+    
+    See `main.js:405-600` for proxy implementation.
+  </Accordion>
+  
+  <Accordion title="System Proxy Configuration" icon="gear">
+    - macOS: Uses `networksetup` command
+    - Windows: Configures WinINET + WinHTTP via PowerShell
+    - Linux: Uses `gsettings` for GNOME
+    - Saves previous settings for restoration
+    - Supports bypass/split-tunneling lists
+    
+    See `main.js:780-920` for system proxy logic.
+  </Accordion>
+</AccordionGroup>
+
+**Important Code Sections**:
+
+- Lines 1-163: Imports, constants, settings management
+- Lines 165-238: Window creation and lifecycle
+- Lines 240-398: SlipStream client spawning
+- Lines 405-700: HTTP proxy server implementation
+- Lines 780-920: System proxy configuration
+
+### index.html
+
+**Location**: `/index.html` (root directory)
+
+**Purpose**: Renderer process - the UI and frontend of the application
+
+**Structure**:
+
+```html
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <!-- Theme variables and styles (lines 7-1500) -->
+</head>
+<body>
+  <!-- UI markup (lines 1501-2500) -->
+  <script>
+    // Renderer logic (lines 2501-end)
+  </script>
+</body>
+</html>
+```
+
+**Key Components**:
+
+<CardGroup cols={2}>
+  <Card title="Theme System" icon="palette">
+    CSS custom properties for light/dark themes (lines 8-80)
+  </Card>
+  <Card title="Status Card" icon="signal">
+    Connection status indicator with animated orb (lines 276-350)
+  </Card>
+  <Card title="Controls" icon="sliders">
+    Start/Stop buttons, settings inputs, workspace management (lines 400-800)
+  </Card>
+  <Card title="Logs Panel" icon="list">
+    Real-time log display with auto-scroll and filtering (lines 133-140)
+  </Card>
+  <Card title="Modals" icon="window">
+    Settings, DNS configuration, intro screens (throughout)
+  </Card>
+  <Card title="IPC Communication" icon="exchange">
+    Event listeners for main process messages (in script section)
+  </Card>
+</CardGroup>
+
+**Styling Approach**:
+
+- Inline CSS using CSS custom properties
+- Theme-aware color system
+- Responsive layout with flexbox
+- Modern UI with shadows, rounded corners, smooth transitions
+
+**Script Section**:
+
+- Direct Node.js integration (`require('electron')`)
+- IPC communication with main process
+- UI state management
+- Event handlers for user interactions
+
+### package.json
+
+**Location**: `/package.json` (root directory)
+
+**Key Sections**:
+
+```json
+{
+  "name": "slipstream-gui",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -mwl"
+  },
+  "dependencies": {
+    "http-proxy": "^1.18.1",
+    "socks": "^2.7.1",
+    "socks-proxy-agent": "^8.0.2"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
+```
+
+<Note>
+  The `electron-builder` configuration is also in package.json, specifying build targets, icons, and resource packaging.
+</Note>
+
+## Supporting Files
+
+### check-system-proxy.js
+
+**Purpose**: Standalone utility to check current system proxy settings
+
+**Usage**: Run with `node check-system-proxy.js` to see:
+- Whether system proxy is enabled
+- Current proxy server and port
+- Bypass list configuration
+
+**Platform Support**: macOS, Windows, Linux
+
+### tun-manager.js
+
+**Purpose**: Legacy TUN interface management (not currently used)
+
+**Status**: Retained for potential future TUN mode implementation
+
+<Warning>
+  This file is not currently used by the application. The app uses HTTP proxy mode exclusively.
+</Warning>
+
+## Assets and Resources
+
+### Application Icon
+
+**Location**: `/assets/icon.png`
+
+**Specifications**:
+- Format: PNG
+- Size: 1024x1024 pixels
+- Used for app icon, dock icon (macOS), taskbar icon (Windows)
+
+**Build Process**:
+- `electron-builder` automatically generates icon files for each platform
+- macOS: Creates .icns file
+- Windows: Creates .ico file
+- Linux: Uses PNG directly
+
+### Intro Modal Image
+
+**Location**: `/intro.png` (root directory)
+
+**Purpose**: Displayed in the first-run introduction modal
+
+## Binaries Directory
+
+### Native SlipStream Clients
+
+**Location**: `/binaries/`
+
+**Required Files**:
+
+| File | Platform | Architecture |
+|------|----------|-------------|
+| `slipstream-client-mac-arm64` | macOS | Apple Silicon (M1/M2/M3) |
+| `slipstream-client-mac-intel` | macOS | Intel x86_64 |
+| `slipstream-client-linux` | Linux | x86_64 |
+| `slipstream-client-win.exe` | Windows | x86_64 |
+
+<Info>
+  These binaries must be present for the build process to succeed. They are packaged into the final application using `electron-builder`'s `extraResources` configuration.
+</Info>
+
+**Binary Selection Logic** (`main.js:240-279`):
+
+```javascript
+function getSlipstreamClientPath() {
+  const platform = process.platform;
+  const resourcesPath = app.isPackaged 
+    ? path.join(process.resourcesPath)  // Production
+    : __dirname;                         // Development
+  
+  if (platform === 'darwin') {
+    // Prefer ARM64 on Apple Silicon, Intel on Intel Macs
+    const preferred = process.arch === 'arm64' 
+      ? 'slipstream-client-mac-arm64' 
+      : 'slipstream-client-mac-intel';
+    
+    const candidates = [
+      path.join(resourcesPath, 'binaries', preferred),
+      path.join(resourcesPath, preferred),  // Fallback
+    ];
+    
+    return candidates.find(p => fs.existsSync(p)) || candidates[0];
+  }
+  // Similar logic for Windows and Linux...
+}
+```
+
+## Build Output
+
+### dist/ Directory
+
+**Created by**: `electron-builder` during build process
+
+**Contents**:
+
+```
+dist/
+├── mac/                          # macOS build
+│   ├── SlipStream GUI.app/
+│   └── SlipStream GUI.dmg
+├── win-unpacked/                 # Windows unpacked
+├── SlipStream GUI Setup.exe      # Windows installer
+├── linux-unpacked/               # Linux unpacked
+└── SlipStream GUI.AppImage       # Linux AppImage
+```
+
+<Warning>
+  The `dist/` directory is excluded from git via `.gitignore`. Never commit build artifacts.
+</Warning>
+
+## Settings Storage
+
+### Development Mode
+
+**Location**: `./settings.json` (project root)
+
+**Characteristics**:
+- Writable during development
+- Can be edited manually
+- Ignored by git
+
+### Production Mode
+
+**Location**: Platform-specific userData directory
+
+| Platform | Path |
+|----------|------|
+| macOS | `~/Library/Application Support/SlipStream GUI/settings.json` |
+| Windows | `%APPDATA%\SlipStream GUI\settings.json` |
+| Linux | `~/.config/SlipStream GUI/settings.json` |
+
+**Settings Schema**:
+
+```json
+{
+  "resolver": "8.8.8.8:53",
+  "domain": "s.example.com",
+  "mode": "proxy",
+  "verbose": false,
+  "socks5AuthEnabled": false,
+  "socks5AuthUsername": "",
+  "socks5AuthPassword": "",
+  "systemProxyEnabledByApp": false,
+  "systemProxyServiceName": "",
+  "proxyBypassList": [],
+  "workspaces": [],
+  "activeWorkspaceId": null
+}
+```
+
+## Development vs Production
+
+### File Path Differences
+
+<Tabs>
+  <Tab title="Development">
+    **Running**: `npm start`
+    
+    **Paths**:
+    - Binaries: `./binaries/slipstream-client-*`
+    - Settings: `./settings.json`
+    - Assets: `./assets/icon.png`
+    - Source: `./main.js`, `./index.html`
+    
+    **Characteristics**:
+    - Direct file access
+    - Fast iteration
+    - Local settings file
+    - No packaging
+  </Tab>
+  
+  <Tab title="Production">
+    **Running**: Built .app / .exe / .AppImage
+    
+    **Paths**:
+    - Binaries: `<resourcesPath>/binaries/slipstream-client-*`
+    - Settings: `<userData>/settings.json`
+    - Assets: Bundled in app.asar
+    - Source: Bundled in app.asar
+    
+    **Characteristics**:
+    - Files packaged in app.asar (read-only)
+    - Binaries in Resources folder (via extraResources)
+    - Settings in writable userData directory
+    - Signed and notarized (macOS)
+  </Tab>
+</Tabs>
+
+### Path Resolution Code
+
+From `main.js:240-245`:
+
+```javascript
+const resourcesPath = app.isPackaged 
+  ? path.join(process.resourcesPath)  // Production: /Applications/SlipStream GUI.app/Contents/Resources/
+  : __dirname;                         // Development: /path/to/SlipStream-GUI/
+```
+
+## Documentation Files
+
+### README.md
+
+**Sections**:
+- Project overview
+- Features list
+- Quick start guide
+- Architecture diagram (lines 360-380)
+- Installation instructions
+- Usage guide
+- Troubleshooting
+
+### BUILD.md
+
+**Contents**:
+- Detailed build instructions for each platform
+- Prerequisites and dependencies
+- Code signing and notarization (macOS)
+- Build troubleshooting
+- Release process
+
+### CONTRIBUTING.md
+
+**Guidelines for**:
+- Code style
+- Pull request process
+- Issue reporting
+- Development workflow
+- Testing requirements
+
+### PROJECT_STRUCTURE.md
+
+**Purpose**: High-level overview of project organization
+
+**Contents**:
+- Directory tree
+- File descriptions
+- Development vs production notes
+- Binary requirements
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture/overview">
+    Learn about the system architecture
+  </Card>
+  <Card title="Proxy Chain" icon="link" href="/architecture/proxy-chain">
+    Understand the proxy implementation
+  </Card>
+</CardGroup>
