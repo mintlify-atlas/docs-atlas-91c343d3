@@ -1,0 +1,112 @@
+{
+  "projectType": "frontend",
+  "projectName": "SlipStream GUI",
+  "projectDescription": "A modern, cross-platform GUI client for SlipStream VPN with system-wide tunneling and HTTP proxy interface",
+  "theme": "aspen",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/basic-usage",
+              "guides/dns-configuration",
+              "guides/system-proxy",
+              "guides/mobile-sharing",
+              "guides/advanced-settings"
+            ]
+          },
+          {
+            "group": "Server Setup",
+            "pages": [
+              "server/overview",
+              "server/deployment",
+              "server/dns-setup"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/common-issues",
+              "troubleshooting/macos",
+              "troubleshooting/windows",
+              "troubleshooting/linux"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Developer Guide",
+            "pages": [
+              "development/overview",
+              "development/setup",
+              "development/building",
+              "development/contributing"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/proxy-chain",
+              "architecture/project-structure"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "api/configuration",
+              "api/ipc-handlers",
+              "api/settings"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Cross-platform desktop VPN client (macOS, Windows, Linux)",
+    "System-wide VPN with automatic proxy configuration",
+    "Real-time status monitoring and logging",
+    "Concurrent DNS checker with one-click configuration",
+    "Mobile device internet sharing via HTTP proxy",
+    "Proxy bypass list for split tunneling",
+    "SOCKS5 authentication support",
+    "Workspace presets for different network environments",
+    "Built-in connection testing and diagnostics",
+    "Portable Windows version available"
+  ],
+  "publicApiSurface": [
+    "HTTP Proxy Server (localhost:8080)",
+    "SOCKS5 Proxy (localhost:5201)",
+    "IPC: start-vpn",
+    "IPC: stop-vpn",
+    "IPC: update-settings",
+    "IPC: get-settings",
+    "IPC: test-dns-servers",
+    "IPC: test-proxy-connection",
+    "IPC: configure-system-proxy",
+    "Settings: resolver (DNS)",
+    "Settings: domain (server)",
+    "Settings: verboseLogging",
+    "Settings: proxyBypassList",
+    "Settings: socks5Auth (username/password)",
+    "Settings: workspaces (presets)"
+  ]
+}
